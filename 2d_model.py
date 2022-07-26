@@ -19,8 +19,23 @@ import autograd.numpy as np
 from autograd import elementwise_grad as egrad
 from autograd import grad
 from autograd import value_and_grad
-import pymem3dg.visual as dg_vis
+
 import matplotlib.pyplot as plt
+
+def matplotlibStyle(s=6, m=8, l=10):
+    plt.rcParams["font.sans-serif"] = "Arial"
+    plt.rcParams["font.family"] = "sans-serif"
+    plt.rcParams["lines.linewidth"] = 2
+    plt.rcParams["savefig.dpi"] = 600
+    # mpl.rcParams.update({'font.size': 8})
+    plt.rc("font", size=l)  # controls default text sizes
+    plt.rc("axes", titlesize=l)  # fontsize of the axes title
+    plt.rc("axes", labelsize=m)  # fontsize of the x and y labels
+    plt.rc("xtick", labelsize=m)  # fontsize of the tick labels
+    plt.rc("ytick", labelsize=m)  # fontsize of the tick labels
+    plt.rc("legend", fontsize=s, frameon=False)  # legend fontsize
+    plt.rc("figure", titlesize=l)  # fontsize of the figure title
+    plt.rc("pdf", fonttype=42)
 
 
 def getGeometry1(nVertex):
@@ -111,7 +126,7 @@ def getEnergy(vertexPositions, isClosed):
 
 
 if __name__ == "__main__":
-    dg_vis.matplotlibStyle(m=10)
+    matplotlibStyle(m=10)
     fig, ax = plt.subplots(2)
 
     Kb = 1
