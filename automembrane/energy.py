@@ -43,7 +43,7 @@ def getEnergy2DClosed(
     Returns:
         float: Energy of the system
     """
-    if not np.isclose(vertexPositions[-1], vertexPositions[0])
+    if not jnp.allclose(vertexPositions[-1], vertexPositions[0]):
         raise RuntimeError(f"First ({vertexPositions[0]}) and last ({vertexPositions[-1]}) points are expected to be the same.")
         
     x = vertexPositions[:-1, 0]
