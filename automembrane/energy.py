@@ -43,6 +43,9 @@ def getEnergy2DClosed(
     Returns:
         float: Energy of the system
     """
+    if not np.isclose(vertexPositions[-1], vertexPositions[0])
+        raise RuntimeError(f"First ({vertexPositions[0]}) and last ({vertexPositions[-1]}) points are expected to be the same.")
+        
     x = vertexPositions[:-1, 0]
     y = vertexPositions[:-1, 1]
     dx = jnp.roll(x, -1) - x
@@ -58,7 +61,7 @@ def getEnergy2DClosed(
     tan_vertex_turning_angles = jnp.tan(vertexTurningAngles / 2)
 
     edgeCurvatures = (
-        jnp.roll(tan_vertex_turning_angles, 1) + tan_vertex_turning_angles
+        tan_vertex_turning_angles + jnp.roll(tan_vertex_turning_angles, 1)
     ) / edgeLengths
 
     bendingEnergy = Kb * jnp.sum(edgeCurvatures * edgeCurvatures * edgeLengths)
@@ -69,7 +72,7 @@ def getEnergy2DClosed(
 
 def getEnergy2DOpen(
     vertexPositions: npt.NDArray[np.float64],
-    Kb: float = 10,
+    Kb: float = 1,
     Kbc: float = 0,
     Ksg: float = 0,
     At: float = 0,
