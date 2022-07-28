@@ -35,7 +35,7 @@ if __name__ == "__main__":
         "Vt": 0,  # Volume target
     }
 
-    nVertex = 12  # number of vertices
+    nVertex = 9  # number of vertices
 
     n = 0
     vertexPositions, isClosed = u.ellipse(nVertex)
@@ -46,6 +46,8 @@ if __name__ == "__main__":
     print("Energy is ", energy)
 
     forces = -u.egrad(f_energy)(vertexPositions)
+
+
     ax[n].scatter(vertexPositions[:, 0], vertexPositions[:, 1], label="membrane")
 
     ax[n].scatter(vertexPositions[:2, 0], vertexPositions[:2, 1], label="membrane")
