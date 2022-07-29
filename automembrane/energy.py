@@ -43,8 +43,8 @@ def getEnergy2DClosed(
     Returns:
         float: Energy of the system
     """
-    # if not jnp.allclose(vertexPositions[-1], vertexPositions[0]):
-    #     raise RuntimeError(f"First ({vertexPositions[0]}) and last ({vertexPositions[-1]}) points are expected to be the same.")
+    if not jnp.allclose(vertexPositions[-1], vertexPositions[0]):
+        raise RuntimeError(f"First ({vertexPositions[0]}) and last ({vertexPositions[-1]}) points are expected to be the same.")
         
     x = vertexPositions[:-1, 0]
     y = vertexPositions[:-1, 1]
@@ -66,7 +66,59 @@ def getEnergy2DClosed(
 
     bendingEnergy = Kb * jnp.sum(edgeCurvatures * edgeCurvatures * edgeLengths)
     surfaceEnergy = Ksg * jnp.sum(edgeLengths)
+    return bendingEnergy + surfaceEnergy
 
+
+def getEnergy2DClosed_notrace(
+    vertexPositions: npt.NDArray[np.float64],
+    Kb: float = 1,
+    Kbc: float = 0,
+    Ksg: float = 0,
+    At: float = 0,
+    epsilon: float = 0,
+    Kv: float = 0,
+    Vt: float = 0,
+) -> float:
+    """Compute the energy of a 2D discrete closed polygon
+
+    Args:
+        vertexPositions (npt.NDArray[np.float64]): Coordinates
+        Kb (float, optional): Bending modulus. Defaults to 1.
+        Kbc (float, optional): Constant relating bending modulus and protein density. Defaults to 0.
+        Ksg (float, optional): Global stretching modulus. Defaults to 0.
+        At (float, optional): Area target. Defaults to 0.
+        epsilon (float, optional): Protein binding energy. Defaults to 0.
+        Kv (float, optional): Pressure-volume modulus. Defaults to 0.
+        Vt (float, optional): Volume target. Defaults to 0.
+
+    Returns:
+        float: Energy of the system
+    """
+    if not np.allclose(vertexPositions[-1], vertexPositions[0]):
+        raise RuntimeError(f"First ({vertexPositions[0]}) and last ({vertexPositions[-1]}) points are expected to be the same.")
+        
+    x = vertexPositions[:-1, 0]
+    y = vertexPositions[:-1, 1]
+    dx = np.roll(x, -1) - x
+    dy = np.roll(y, -1) - y
+    edgeLengths = np.sqrt(dx**2 + dy**2)
+    edgeAbsoluteAngles = np.arctan2(dy, dx)
+
+    vertexTurningAngles = (np.roll(edgeAbsoluteAngles, -1) - edgeAbsoluteAngles) % (
+        2 * np.pi
+    )
+    vertexTurningAngles = (vertexTurningAngles + np.pi) % (2 * np.pi) - np.pi
+
+    tan_vertex_turning_angles = np.tan(vertexTurningAngles / 2)
+
+    edgeCurvatures = (
+        tan_vertex_turning_angles + np.roll(tan_vertex_turning_angles, 1)
+    ) / edgeLengths
+
+    bendingEnergy = Kb * np.sum(edgeCurvatures * edgeCurvatures * edgeLengths)
+    surfaceEnergy = Ksg * np.sum(edgeLengths)
+
+    print(bendingEnergy, surfaceEnergy)
     return bendingEnergy + surfaceEnergy
 
 
