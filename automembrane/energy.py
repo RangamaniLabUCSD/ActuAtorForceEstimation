@@ -20,25 +20,15 @@ import numpy.typing as npt
 
 def getEnergy2DClosed(
     vertexPositions: npt.NDArray[np.float64],
-    Kb: float = 1,
-    Kbc: float = 0,
-    Ksg: float = 0,
-    At: float = 0,
-    epsilon: float = 0,
-    Kv: float = 0,
-    Vt: float = 0,
+    Kb: float = 0.1,
+    Ksg: float = 50,
 ) -> float:
     """Compute the energy of a 2D discrete closed polygon
 
     Args:
         vertexPositions (npt.NDArray[np.float64]): Coordinates
         Kb (float, optional): Bending modulus. Defaults to 1.
-        Kbc (float, optional): Constant relating bending modulus and protein density. Defaults to 0.
         Ksg (float, optional): Global stretching modulus. Defaults to 0.
-        At (float, optional): Area target. Defaults to 0.
-        epsilon (float, optional): Protein binding energy. Defaults to 0.
-        Kv (float, optional): Pressure-volume modulus. Defaults to 0.
-        Vt (float, optional): Volume target. Defaults to 0.
 
     Returns:
         float: Energy of the system
@@ -72,27 +62,17 @@ def getEnergy2DClosed(
 def getEnergy2DClosed_notrace(
     vertexPositions: npt.NDArray[np.float64],
     Kb: float = 1,
-    Kbc: float = 0,
     Ksg: float = 0,
-    At: float = 0,
-    epsilon: float = 0,
-    Kv: float = 0,
-    Vt: float = 0,
-) -> float:
+) -> tuple(float,float):
     """Compute the energy of a 2D discrete closed polygon
 
     Args:
         vertexPositions (npt.NDArray[np.float64]): Coordinates
         Kb (float, optional): Bending modulus. Defaults to 1.
-        Kbc (float, optional): Constant relating bending modulus and protein density. Defaults to 0.
         Ksg (float, optional): Global stretching modulus. Defaults to 0.
-        At (float, optional): Area target. Defaults to 0.
-        epsilon (float, optional): Protein binding energy. Defaults to 0.
-        Kv (float, optional): Pressure-volume modulus. Defaults to 0.
-        Vt (float, optional): Volume target. Defaults to 0.
 
     Returns:
-        float: Energy of the system
+        tuple(float, float): Tuple of bending energy and surface energy
     """
     if not np.allclose(vertexPositions[-1], vertexPositions[0]):
         raise RuntimeError(f"First ({vertexPositions[0]}) and last ({vertexPositions[-1]}) points are expected to be the same.")
@@ -118,31 +98,20 @@ def getEnergy2DClosed_notrace(
     bendingEnergy = Kb * np.sum(edgeCurvatures * edgeCurvatures * edgeLengths)
     surfaceEnergy = Ksg * np.sum(edgeLengths)
 
-    print(bendingEnergy, surfaceEnergy)
-    return bendingEnergy + surfaceEnergy
+    return bendingEnergy, surfaceEnergy
 
 
 def getEnergy2DOpen(
     vertexPositions: npt.NDArray[np.float64],
-    Kb: float = 1,
-    Kbc: float = 0,
-    Ksg: float = 0,
-    At: float = 0,
-    epsilon: float = 0,
-    Kv: float = 0,
-    Vt: float = 0,
+    Kb: float = 0.1,
+    Ksg: float = 50,
 ) -> float:
     """Compute the energy of a 2D discrete open polygon
 
     Args:
         vertexPositions (npt.NDArray[np.float64]): Coordinates
         Kb (float, optional): Bending modulus. Defaults to 1.
-        Kbc (float, optional): Constant relating bending modulus and protein density. Defaults to 0.
         Ksg (float, optional): Global stretching modulus. Defaults to 0.
-        At (float, optional): Area target. Defaults to 0.
-        epsilon (float, optional): Protein binding energy. Defaults to 0.
-        Kv (float, optional): Pressure-volume modulus. Defaults to 0.
-        Vt (float, optional): Volume target. Defaults to 0.
 
     Returns:
         float: Energy of the system
