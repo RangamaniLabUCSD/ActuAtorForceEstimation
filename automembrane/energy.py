@@ -63,7 +63,7 @@ def getEnergy2DClosed_notrace(
     vertexPositions: npt.NDArray[np.float64],
     Kb: float = 1,
     Ksg: float = 0,
-) -> tuple(float,float):
+) -> tuple[float,float]:
     """Compute the energy of a 2D discrete closed polygon
 
     Args:
