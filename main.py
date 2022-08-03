@@ -21,18 +21,15 @@ import numpy as np
 import automembrane.util as u
 from automembrane.energy import getEnergy2DClosed, getEnergy2DOpen
 
+from jax import jit
+
 if __name__ == "__main__":
     u.matplotlibStyle(medium=10)
     fig, ax = plt.subplots(2)
 
     parameters = {
         "Kb": 1,  # Bending modulus
-        "Kbc": 0,  # Constant of bending modulus vs protein density
         "Ksg": 0,  # Global stretching modulus
-        "At": 0,  # Preferred area
-        "epsilon": 0,  # Binding energy per protein
-        "Kv": 0,  # pressure-volume modulus
-        "Vt": 0,  # Volume target
     }
 
     nVertex = 9  # number of vertices
@@ -40,9 +37,9 @@ if __name__ == "__main__":
     n = 0
     vertexPositions, isClosed = u.ellipse(nVertex)
 
-    f_energy = partial(getEnergy2DClosed, **parameters)
+    f_energy = jit(partial(getEnergy2DClosed, **parameters))
 
-    energy = f_energy(vertexPositions)
+    energy = f_energy(vertexPositions).block_until_ready()
     print("Energy is ", energy)
 
     forces = -u.egrad(f_energy)(vertexPositions)

@@ -72,7 +72,7 @@ def matplotlibStyle(small: float = 6, medium: float = 8, large: float = 10):
 
 
 def egrad(g: Callable) -> Callable:
-    """Compute the elementwise gradient of a function
+    """Convenience function to generate the elementwise gradient of a function
 
     Args:
         g (Callable): Function to wrap
@@ -83,7 +83,7 @@ def egrad(g: Callable) -> Callable:
 
     def wrapped(x, *rest, **kwargs):
         y, g_vjp = jax.vjp(lambda x: g(x, *rest, **kwargs), x)
-        (x_bar,) = g_vjp(np.ones_like(y))
+        (x_bar,) = g_vjp(jax.numpy.ones_like(y))
         return x_bar
 
     return wrapped
