@@ -1,17 +1,9 @@
-# Copyright (C) 2022 Eleanor Jung, Cuncheng Zhu, and Christopher T. lee
+# Copyright (c) 2022 Eleanor Jung, Cuncheng Zhu, and Christopher T. Lee
 #
-# ActuAtorForceEstimation is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Lesser General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# ActuAtorForceEstimation is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Lesser General Public License for more details.
-#
-# You should have received a copy of the GNU Lesser General Public License
-# along with ActuAtorForceEstimation. If not, see <http://www.gnu.org/licenses/>.
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
 
 from functools import partial
 
@@ -20,14 +12,16 @@ import jax.numpy as jnp
 import numpy as np
 import numpy.typing as npt
 
-# from . import util as u
+from . import util as u
+
 
 @partial(jax.jit, static_argnames=["Kb", "Ksg"])
 def _get_energy_2d_closed(
     vertex_positions: npt.NDArray[np.float64],
     Kb: float = 0.1,
     Ksg: float = 50,
-) -> float:
+    Ksl: float = 1,
+) -> npt.NDArray[np.float64]:
     """Compute the energy of a 2D discrete closed polygon.
 
     Note that this function assumes that the coordinates of the last point are the same as the first point.
@@ -38,10 +32,12 @@ def _get_energy_2d_closed(
         Ksg (float, optional): Global stretching modulus in units of PN um/um^2. Defaults to 0.
 
     Returns:
-        float: Energy of the system
+        npt.NDArray[np.float64]: Componentwise energies of the system
     """
     d_pos = jnp.roll(vertex_positions[:-1], -1, axis=0) - vertex_positions[:-1]
     edgeLengths = jnp.linalg.norm(d_pos, axis=1)
+    referenceEdgeLength = jnp.mean(edgeLengths)
+
     edgeAbsoluteAngles = jnp.arctan2(d_pos[:, 1], d_pos[:, 0])
 
     vertexTurningAngles = (jnp.roll(edgeAbsoluteAngles, -1) - edgeAbsoluteAngles) % (
@@ -57,13 +53,17 @@ def _get_energy_2d_closed(
 
     bendingEnergy = Kb * jnp.sum(edgeCurvatures * edgeCurvatures * edgeLengths)
     surfaceEnergy = Ksg * jnp.sum(edgeLengths)
-    return bendingEnergy + surfaceEnergy
+    regularizationEnergy = Ksl * jnp.sum(
+        ((edgeLengths - referenceEdgeLength) / referenceEdgeLength) ** 2
+    )
+    return bendingEnergy, surfaceEnergy, regularizationEnergy
 
 
 def get_energy_2d_closed(
     vertex_positions: npt.NDArray[np.float64],
     Kb: float = 0.1,
     Ksg: float = 50,
+    Ksl: float = 1,
 ) -> float:
     """Compute the energy of a 2D discrete closed polygon.
 
@@ -89,16 +89,17 @@ def _get_force_2d_closed(
     vertex_positions: npt.NDArray[np.float64],
     Kb: float = 0.1,
     Ksg: float = 50,
-) -> float:
+):
     f_energy = partial(_get_energy_2d_closed, Kb=Kb, Ksg=Ksg)
-    return jax.grad(f_energy)(vertex_positions)
-    
+    # return jax.grad(f_energy)(vertex_positions)
+    return jax.jacrev(f_energy)(vertex_positions)
+
 
 def get_force_2d_closed(
     vertex_positions: npt.NDArray[np.float64],
     Kb: float = 0.1,
     Ksg: float = 50,
-) -> float:
+):
     """Compute the force of a 2D discrete closed polygon.
 
     Note that this function assumes that the coordinates of the last point are the same as the first point.

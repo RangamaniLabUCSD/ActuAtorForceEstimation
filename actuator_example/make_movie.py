@@ -1,3 +1,10 @@
+# Copyright (c) 2022 Eleanor Jung, Cuncheng Zhu, and Christopher T. Lee
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+
 import math
 import tempfile
 from collections import defaultdict
@@ -8,6 +15,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import moviepy.editor as mpy
 import numpy as np
+
 # from jax import jit
 # from PIL import Image
 from scipy.interpolate import splev, splprep
@@ -16,6 +24,7 @@ from tqdm import tqdm
 
 import automembrane.util as u
 from automembrane.energy import *
+
 
 u.matplotlibStyle(small=10, medium=12, large=14)
 
@@ -73,8 +82,9 @@ total_time = 0.01
 dt = 5e-6  # Timestep
 n_iter = math.floor(total_time / dt)  # Number of relaxation steps
 
+
 def make_movie(file):
-    energy_log = np.zeros(n_iter)
+    # energy_log = np.zeros(n_iter)
     data = defaultdict(dict)
     k = file.stem
 
@@ -106,14 +116,14 @@ def make_movie(file):
     if n_iter > 0:
         for i in tqdm(range(0, n_iter), desc="Energy relaxation"):
             # energy, force = f_value_and_grad(relaxed_coords)
-            energy_log[i] = f_energy(coords[i])
+            # energy_log[i] = f_energy(coords[i])
 
             # Compute dual length
             dc = np.roll(coords[i][:-1], -1, axis=0) - coords[i][:-1]
             edgeLengths = np.linalg.norm(dc, axis=1)
             dualLengths = ((edgeLengths + np.roll(edgeLengths, 1)) / 2.0).reshape(-1, 1)
             dualLengths = np.vstack((dualLengths, dualLengths[0]))
-            forces[i] = -f_force(coords[i])  # / dualLengths
+            forces[i] = -f_force(coords[i]) / dualLengths
 
             coords[i + 1] = np.array(coords[i] - f_force(coords[i]) * dt)
             coords[i + 1][-1] = coords[i + 1][0]
@@ -161,14 +171,15 @@ def make_movie(file):
             ax.set_ylim(ax.get_ylim()[::-1])
 
             fig.savefig(f"{tmp_dir}/{file.stem}_{i}.png")
+            fig.clear()
             plt.close(fig)
 
-        clip = mpy.ImageSequenceClip(
-            [f"{tmp_dir}/{file.stem}_{i}.png" for i in rng],
-            fps=30,
-        )
-        clip.write_videofile(f"movies/{file.stem}_test_forces.mp4", fps=30)
-        clip.close()
+        # clip = mpy.ImageSequenceClip(
+        #     [f"{tmp_dir}/{file.stem}_{i}.png" for i in rng],
+        #     fps=30,
+        # )
+        # clip.write_videofile(f"movies/{file.stem}_test_forces.mp4", fps=30)
+        # clip.close()
 
 
 if __name__ == "__main__":

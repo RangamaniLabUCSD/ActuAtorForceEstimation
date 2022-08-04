@@ -1,17 +1,8 @@
-# Copyright (C) 2022 Eleanor Jung, Cuncheng Zhu, and Christopher T. lee
-# 
-# ActuAtorForceEstimation is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Lesser General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-# 
-# ActuAtorForceEstimation is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Lesser General Public License for more details.
-# 
-# You should have received a copy of the GNU Lesser General Public License
-# along with ActuAtorForceEstimation. If not, see <http://www.gnu.org/licenses/>.
+# Copyright (c) 2022 Eleanor Jung, Cuncheng Zhu, and Christopher T. Lee
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 import importlib.util
 
@@ -31,6 +22,7 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import matplotlib.lines as mlines
 import matplotlib.patches as mpatches
+
 # import matplotlib.pylab as mpl
 
 import seaborn as sns
@@ -77,8 +69,8 @@ LinearWhiteBlueColormap = mpl.colors.LinearSegmentedColormap.from_list(
 
 from mpl_toolkits import axes_grid1
 
-from mpl_toolkits.axes_grid1.inset_locator import (inset_axes, InsetPosition,
-                                                  mark_inset)
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes, InsetPosition, mark_inset
+
 
 def add_colorbar(im, ax=None, aspect=20, pad_fraction=0.5, **kwargs):
     """Add a vertical color bar to an image plot."""
@@ -214,6 +206,7 @@ def plot_multiple_errorbars_tight(means, stds, c, label):
 
     plt.tight_layout()
 
+
 def custom_cmap(size, label, ticklabels, cmap=cm.RdPu):
     """
     Function to define colormap
@@ -240,11 +233,13 @@ def custom_cmap(size, label, ticklabels, cmap=cm.RdPu):
         label=label,
     )
     cb.ax.set_yticklabels(ticklabels)  # vertically oriented colorbar
-    
+
+
 import datetime
 
 now = datetime.datetime.now()
 date = now.strftime("%Y%m%d")
+
 
 def save_fig(fig, basename: str):
     fig.savefig(f"{basename}.png", format="png")

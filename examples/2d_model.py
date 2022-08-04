@@ -1,18 +1,8 @@
-# Copyright (C) 2022 Eleanor Jung, Cuncheng Zhu, and Christopher T. lee
-# 
-# ActuAtorForceEstimation is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Lesser General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-# 
-# ActuAtorForceEstimation is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Lesser General Public License for more details.
-# 
-# You should have received a copy of the GNU Lesser General Public License
-# along with ActuAtorForceEstimation. If not, see <http://www.gnu.org/licenses/>.
-
+# Copyright (c) 2022 Eleanor Jung, Cuncheng Zhu, and Christopher T. Lee
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 
 import autograd.numpy as np
@@ -21,6 +11,7 @@ from autograd import grad
 from autograd import value_and_grad
 
 import matplotlib.pyplot as plt
+
 
 def matplotlibStyle(s=6, m=8, l=10):
     plt.rcParams["font.sans-serif"] = "Arial"
@@ -60,16 +51,16 @@ def getGeometry2(nVertex):
 
 
 def removeBoundaryForces(forces):
-    nVertex = int(np.shape(forces)[0]/2)
+    nVertex = int(np.shape(forces)[0] / 2)
     forces[:3] = 0
-    forces[nVertex - 3: nVertex] = 0
-    forces[nVertex: nVertex + 3] = 0
+    forces[nVertex - 3 : nVertex] = 0
+    forces[nVertex : nVertex + 3] = 0
     forces[-3:] = 0
     return forces
 
 
 def getEnergy(vertexPositions, isClosed):
-    nVertex = int(np.shape(vertexPositions)[0]/2)
+    nVertex = int(np.shape(vertexPositions)[0] / 2)
     x = vertexPositions[:nVertex]
     y = vertexPositions[nVertex:]
 
@@ -80,23 +71,19 @@ def getEnergy(vertexPositions, isClosed):
         dx = np.diff(x)  # n+1-1
         dy = np.diff(y)
 
-        edgeLengths = np.sqrt(dx ** 2 + dy ** 2)
+        edgeLengths = np.sqrt(dx**2 + dy**2)
 
         edgeAbsoluteAngles = np.arctan2(dy, dx)
         vertexTurningAngles = np.diff(
             np.append(edgeAbsoluteAngles, edgeAbsoluteAngles[0])
         ) % (2 * np.pi)
-        vertexTurningAngles = (vertexTurningAngles +
-                               np.pi) % (2 * np.pi) - np.pi
-        vertexTurningAngles = np.append(
-            vertexTurningAngles, vertexTurningAngles[0])
+        vertexTurningAngles = (vertexTurningAngles + np.pi) % (2 * np.pi) - np.pi
+        vertexTurningAngles = np.append(vertexTurningAngles, vertexTurningAngles[0])
 
         edgeCurvatures = (
-            np.tan(vertexTurningAngles[:-1] / 2) +
-            np.tan(vertexTurningAngles[1:] / 2)
+            np.tan(vertexTurningAngles[:-1] / 2) + np.tan(vertexTurningAngles[1:] / 2)
         ) / edgeLengths
-        bendingEnergy = Kb * \
-            np.sum(edgeCurvatures * edgeCurvatures * edgeLengths)
+        bendingEnergy = Kb * np.sum(edgeCurvatures * edgeCurvatures * edgeLengths)
 
         surfaceEnergy = Ksg * np.sum(edgeLengths)
 
@@ -104,22 +91,17 @@ def getEnergy(vertexPositions, isClosed):
     else:
         dx = np.diff(x)
         dy = np.diff(y)
-        edgeLengths = np.sqrt(dx ** 2 + dy ** 2)
+        edgeLengths = np.sqrt(dx**2 + dy**2)
         edgeAbsoluteAngles = np.arctan2(dy, dx)
         vertexTurningAngles = np.diff(edgeAbsoluteAngles) % (2 * np.pi)
-        vertexTurningAngles = (vertexTurningAngles +
-                               np.pi) % (2 * np.pi) - np.pi
-        vertexTurningAngles = np.append(
-            vertexTurningAngles, vertexTurningAngles[-1])
-        vertexTurningAngles = np.append(vertexTurningAngles[0],
-                                        vertexTurningAngles)
+        vertexTurningAngles = (vertexTurningAngles + np.pi) % (2 * np.pi) - np.pi
+        vertexTurningAngles = np.append(vertexTurningAngles, vertexTurningAngles[-1])
+        vertexTurningAngles = np.append(vertexTurningAngles[0], vertexTurningAngles)
         edgeCurvatures = (
-            np.tan(vertexTurningAngles[:-1] / 2) +
-            np.tan(vertexTurningAngles[1:] / 2)
+            np.tan(vertexTurningAngles[:-1] / 2) + np.tan(vertexTurningAngles[1:] / 2)
         ) / edgeLengths
 
-        bendingEnergy = Kb * \
-            np.sum(edgeCurvatures * edgeCurvatures * edgeLengths)
+        bendingEnergy = Kb * np.sum(edgeCurvatures * edgeCurvatures * edgeLengths)
 
         surfaceEnergy = Ksg * np.sum(edgeLengths)
         return bendingEnergy + surfaceEnergy
@@ -144,26 +126,38 @@ if __name__ == "__main__":
     energy = getEnergy(vertexPositions, isClosed)
     print("Energy is ", energy)
     forces = -egrad(getEnergy)(vertexPositions, isClosed)
-    ax[n].scatter(vertexPositions[:nVertex],
-                  vertexPositions[nVertex:], label="membrane")
-    ax[n].quiver(vertexPositions[:nVertex], vertexPositions[nVertex:],
-                 forces[:nVertex], forces[nVertex:], label="force")
+    ax[n].scatter(
+        vertexPositions[:nVertex], vertexPositions[nVertex:], label="membrane"
+    )
+    ax[n].quiver(
+        vertexPositions[:nVertex],
+        vertexPositions[nVertex:],
+        forces[:nVertex],
+        forces[nVertex:],
+        label="force",
+    )
     ax[n].legend()
-    ax[n].set_aspect('equal')
-    n = n+1
+    ax[n].set_aspect("equal")
+    n = n + 1
 
     vertexPositions, isClosed = getGeometry2(nVertex)
     energy = getEnergy(vertexPositions, isClosed)
     print("Energy is ", energy)
     forces = -egrad(getEnergy)(vertexPositions, isClosed)
     forces = removeBoundaryForces(forces)
-    ax[n].scatter(vertexPositions[:nVertex],
-                  vertexPositions[nVertex:], label="membrane")
-    ax[n].quiver(vertexPositions[:nVertex], vertexPositions[nVertex:],
-                 forces[:nVertex], forces[nVertex:], label="force")
+    ax[n].scatter(
+        vertexPositions[:nVertex], vertexPositions[nVertex:], label="membrane"
+    )
+    ax[n].quiver(
+        vertexPositions[:nVertex],
+        vertexPositions[nVertex:],
+        forces[:nVertex],
+        forces[nVertex:],
+        label="force",
+    )
     ax[n].legend()
-    ax[n].set_aspect('equal')
-    n = n+1
+    ax[n].set_aspect("equal")
+    n = n + 1
 
     plt.savefig("2d.pdf")
     # plt.show()
