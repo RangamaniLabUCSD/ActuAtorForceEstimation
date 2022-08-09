@@ -47,7 +47,9 @@ padding = 2
 cm = mpl.cm.viridis_r
 
 
-def make_movie(file, fps: int = 30, dpi: int = 100, skip: int = 100):
+def make_movie(
+    file, fps: int = 30, dpi: int = 100, skip: int = 100, interactive: bool = False
+):
     original_coords = np.loadtxt(file)
     original_coords = np.vstack(
         (original_coords, original_coords[0])
@@ -129,9 +131,7 @@ def make_movie(file, fps: int = 30, dpi: int = 100, skip: int = 100):
 
     # ax.legend(loc="center left", bbox_to_anchor=(1, 0.5))
     cbar = fig.colorbar(
-        mpl.cm.ScalarMappable(
-            norm=mpl.colors.Normalize(vmin=f_mag.min(), vmax=f_mag.max()), cmap=cm
-        ),
+        q,
         ax=ax,
     )
     cbar.ax.get_yaxis().labelpad = 20
@@ -143,29 +143,28 @@ def make_movie(file, fps: int = 30, dpi: int = 100, skip: int = 100):
 
         forces = np.sum(f[i], axis=0)
         f_mag = np.linalg.norm(forces, axis=1)
+        cmap = mpl.cm.ScalarMappable(
+            norm=mpl.colors.Normalize(vmin=f_mag.min(), vmax=f_mag.max()), cmap=cm
+        )
+        cbar.update_normal(cmap)
         q.set_UVC(forces[:, 0], forces[:, 1], f_mag)
         q.set_offsets(c[i])
-
-        cbar.update_normal(
-            mpl.cm.ScalarMappable(
-                norm=mpl.colors.Normalize(vmin=f_mag.min(), vmax=f_mag.max()), cmap=cm
-            )
-        )
-
+        q.set_clim(f_mag.min(), f_mag.max())
         return line, time_text, q, cbar
 
-    ## MAKE MOVIE
-    moviewriter = animation.FFMpegWriter(fps=fps)
-    with moviewriter.saving(fig, f"movies/{file.stem}.mp4", dpi=dpi):
-        for i in tqdm(np.arange(0, n_iter + 1, skip)):
-            animate(i)
-            moviewriter.grab_frame()
-
-    ## INTERACTIVE ANIMATION
-    # ani = animation.FuncAnimation(
-    #     fig, animate, np.arange(0, n_iter, 100), interval=200, blit=True
-    # )
-    # plt.show()
+    if interactive:
+        ## INTERACTIVE ANIMATION
+        ani = animation.FuncAnimation(
+            fig, animate, np.arange(0, n_iter, 100), interval=200, blit=True
+        )
+        plt.show()
+    else:
+        ## MAKE MOVIE
+        moviewriter = animation.FFMpegWriter(fps=fps)
+        with moviewriter.saving(fig, f"movies/{file.stem}.mp4", dpi=dpi):
+            for i in tqdm(np.arange(0, n_iter + 1, skip)):
+                animate(i)
+                moviewriter.grab_frame()
     ax.clear()
     plt.close(fig)
 
