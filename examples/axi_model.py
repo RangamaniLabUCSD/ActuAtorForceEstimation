@@ -9,7 +9,6 @@ import autograd.numpy as np
 from autograd import elementwise_grad as egrad
 from autograd import grad
 from autograd import value_and_grad
-import pymem3dg.visual as dg_vis
 import matplotlib.pyplot as plt
 
 
@@ -73,7 +72,6 @@ def getEnergy(vertexPositions, isClosed):
 
 
 if __name__ == "__main__":
-    dg_vis.matplotlibStyle(m=10)
     fig, ax = plt.subplots(1)
 
     Kb = 1
@@ -83,11 +81,12 @@ if __name__ == "__main__":
     epsilon = 0
     Kv = 0
     Vt = 0
-    nVertex = 100
+    nVertex = 9
 
     nSubplot = 0
 
     vertexPositions, isClosed = getGeometry1(nVertex)
+    print(vertexPositions)
     energy = getEnergy(vertexPositions, isClosed)
     print("Energy is ", energy)
     forces = -egrad(getEnergy)(vertexPositions, isClosed)

@@ -4,15 +4,11 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-from functools import partial
-
 import matplotlib.pyplot as plt
 import numpy as np
 
 import automembrane.util as u
-from automembrane.energy import getEnergy2DClosed, getEnergy2DOpen
-
-from jax import jit
+from automembrane.energy import ClosedPlaneCurveMaterial, OpenPlaneCurveMaterial
 
 if __name__ == "__main__":
     u.matplotlibStyle(medium=10)
@@ -21,6 +17,7 @@ if __name__ == "__main__":
     parameters = {
         "Kb": 1,  # Bending modulus
         "Ksg": 0,  # Global stretching modulus
+        "Ksl": 0,
     }
 
     nVertex = 9  # number of vertices
@@ -28,12 +25,12 @@ if __name__ == "__main__":
     n = 0
     vertexPositions, isClosed = u.ellipse(nVertex)
 
-    f_energy = jit(partial(getEnergy2DClosed, **parameters))
+    m = ClosedPlaneCurveMaterial(**parameters)
 
-    energy = f_energy(vertexPositions).block_until_ready()
+    energy = m.energy(vertexPositions)
     print("Energy is ", energy)
 
-    forces = -u.egrad(f_energy)(vertexPositions)
+    forces = np.sum(m.force(vertexPositions), axis=0)
 
     ax[n].scatter(vertexPositions[:, 0], vertexPositions[:, 1], label="membrane")
 
@@ -49,14 +46,12 @@ if __name__ == "__main__":
     ax[n].set_aspect("equal")
     n = n + 1
 
-    # Rebind energy for open curves
-    f_energy = partial(getEnergy2DOpen, **parameters)
-
-    vertexPositions, isClosed = u.getGeometry2(nVertex)
-    energy = f_energy(vertexPositions)
+    m = OpenPlaneCurveMaterial(**parameters)
+    vertexPositions, isClosed = u.cos_curve(nVertex)
+    energy = m.energy(vertexPositions)
 
     print("Energy is ", energy)
-    forces = np.array(-u.egrad(f_energy)(vertexPositions))
+    forces = np.array(np.sum(m.force(vertexPositions), axis=0))
 
     forces[:3] = 0
     forces[-3:] = 0

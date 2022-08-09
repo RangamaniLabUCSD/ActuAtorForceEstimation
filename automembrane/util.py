@@ -12,25 +12,51 @@ import jax
 import matplotlib.pyplot as plt
 
 
-def ellipse(nVertex: int = 100) -> tuple[npt.NDArray[np.float64], bool]:
+def ellipse(
+    nVertex: int = 100, x_scale: float = 1.1, y_scale: float = 0.9, R: float = 1.0
+) -> tuple[npt.NDArray[np.float64], bool]:
     """Generate an ellipse
 
     Args:
         nVertex (int, optional): Number of vertices. Defaults to 100.
+        x_scale (float, optional): Factor to scale x radius by. Defaults to 1.1.
+        y_scale (float, optional): Factor to scale y radius by. Defaults to 0.9.
+        R (float, optional): Radius. Defaults to 1.0.
 
     Returns:
-        tuple[npt.NDArray[np.float64], bool]: List of vertices, and whether shape is closed
+        tuple[npt.NDArray[np.float64], bool]: ist of vertices, and whether shape is closed
     """
-    R = 1
     theta = np.linspace(0, 2 * np.pi, nVertex)
-    x = (1.1 * R * np.cos(theta)).reshape(-1, 1)
-    y = (0.9 * R * np.sin(theta)).reshape(-1, 1)
+    x = (x_scale * R * np.cos(theta)).reshape(-1, 1)
+    y = (y_scale * R * np.sin(theta)).reshape(-1, 1)
     vertexPositions = np.hstack((x, y))
     isClosed = True
     return vertexPositions, isClosed
 
 
-def getGeometry2(nVertex: int):
+def half_ellipse(
+    nVertex: int = 100, x_scale: float = 1.1, y_scale: float = 0.9, R: float = 1.0
+) -> tuple[npt.NDArray[np.float64], bool]:
+    """Generate a half ellipse
+
+    Args:
+        nVertex (int, optional): Number of vertices. Defaults to 100.
+        x_scale (float, optional): Factor to scale x radius by. Defaults to 1.1.
+        y_scale (float, optional): Factor to scale y radius by. Defaults to 0.9.
+        R (float, optional): Radius. Defaults to 1.0.
+
+    Returns:
+        tuple[npt.NDArray[np.float64], bool]: ist of vertices, and whether shape is closed
+    """
+    theta = np.linspace(-np.pi / 2, np.pi / 2, nVertex + 1)
+    x = x_scale * R * np.cos(theta).reshape(-1, 1)
+    y = y_scale * R * np.sin(theta).reshape(-1, 1)
+    vertexPositions = np.hstack((x, y))
+    isClosed = True
+    return vertexPositions, isClosed
+
+
+def cos_curve(nVertex: int):
     amp = 0.5
     x = (np.linspace(0, 2 * np.pi, nVertex)).reshape(-1, 1)
     y = (amp * np.cos(x)).reshape(-1, 1)

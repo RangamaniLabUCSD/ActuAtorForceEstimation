@@ -14,45 +14,6 @@ import numpy as np
 import numpy.typing as npt
 
 
-@partial(jax.jit, static_argnames=["Kb", "Ksg"])
-def get_energy_2d_open(
-    vertex_positions: npt.NDArray[np.float64],
-    Kb: float = 0.1,
-    Ksg: float = 50,
-) -> float:
-    """Compute the energy of a 2D discrete open polygon
-
-    Args:
-        vertex_positions (npt.NDArray[np.float64]): Coordinates
-        Kb (float, optional): Bending modulus. Defaults to 1.
-        Ksg (float, optional): Global stretching modulus. Defaults to 0.
-
-    Returns:
-        float: Energy of the system
-    """
-    x = vertex_positions[:, 0]
-    y = vertex_positions[:, 1]
-    dx = jnp.diff(x)
-    dy = jnp.diff(y)
-    edgeLengths = jnp.sqrt(dx**2 + dy**2)
-    edgeAbsoluteAngles = jnp.arctan2(dy, dx)
-
-    vertexTurningAngles = (jnp.diff(edgeAbsoluteAngles)) % (2 * jnp.pi)
-    vertexTurningAngles = (vertexTurningAngles + jnp.pi) % (2 * jnp.pi) - jnp.pi
-
-    vertexTurningAngles = jnp.append(vertexTurningAngles, vertexTurningAngles[-1])
-    vertexTurningAngles = jnp.append(vertexTurningAngles[0], vertexTurningAngles)
-
-    edgeCurvatures = (
-        jnp.tan(vertexTurningAngles[:-1] / 2) + jnp.tan(vertexTurningAngles[1:] / 2)
-    ) / edgeLengths
-
-    bendingEnergy = Kb * jnp.sum(edgeCurvatures * edgeCurvatures * edgeLengths)
-    surfaceEnergy = Ksg * jnp.sum(edgeLengths)
-
-    return bendingEnergy + surfaceEnergy
-
-
 class Material(ABC):
     @abstractmethod
     def energy(
@@ -238,3 +199,91 @@ class ClosedPlaneCurveMaterial(Material):
         """
         self._check_valid(vertex_positions)
         return self._energy_force(vertex_positions)
+
+
+class OpenPlaneCurveMaterial(Material):
+    def __init__(
+        self,
+        Kb: float = 0.1,
+        Ksg: float = 50,
+        Ksl: float = 1,
+    ):
+        """Initialize plane curve material
+
+        Args:
+            Kb (float, optional): Bending modulus in units of pN um.Defaults to 1.
+            Ksg (float, optional): Global stretching modulus in units of PN um/um^2. Defaults to 0.
+            Ksl (float, optional): Regularization modulus. Defaults to 1.
+        """
+        self.Kb = Kb
+        self.Ksg = Ksg
+        self.Ksl = Ksl
+
+    @partial(jax.jit, static_argnums=0)
+    def energy(
+        self, vertex_positions: npt.NDArray[np.float64]
+    ) -> npt.NDArray[np.float64]:
+        """Compute the energy of a 2D discrete closed polygon.
+
+        Note that this function assumes that the coordinates of the last point are the same as the first point.
+
+        Args:
+            vertex_positions (npt.NDArray[np.float64]): Coordinates
+
+        Returns:
+            float: Energy of the system
+        """
+        x = vertex_positions[:, 0]
+        y = vertex_positions[:, 1]
+        dx = jnp.diff(x)
+        dy = jnp.diff(y)
+        edgeLengths = jnp.sqrt(dx**2 + dy**2)
+        edgeAbsoluteAngles = jnp.arctan2(dy, dx)
+
+        vertexTurningAngles = (jnp.diff(edgeAbsoluteAngles)) % (2 * jnp.pi)
+        vertexTurningAngles = (vertexTurningAngles + jnp.pi) % (2 * jnp.pi) - jnp.pi
+
+        vertexTurningAngles = jnp.append(vertexTurningAngles, vertexTurningAngles[-1])
+        vertexTurningAngles = jnp.append(vertexTurningAngles[0], vertexTurningAngles)
+
+        edgeCurvatures = (
+            jnp.tan(vertexTurningAngles[:-1] / 2) + jnp.tan(vertexTurningAngles[1:] / 2)
+        ) / edgeLengths
+
+        bendingEnergy = self.Kb * jnp.sum(edgeCurvatures * edgeCurvatures * edgeLengths)
+        surfaceEnergy = self.Ksg * jnp.sum(edgeLengths)
+
+        return jnp.array([bendingEnergy, surfaceEnergy])
+
+    @partial(jax.jit, static_argnums=0)
+    def force(
+        self,
+        vertex_positions: npt.NDArray[np.float64],
+    ) -> npt.NDArray[np.float64]:
+        """Compute the force of a 2D discrete closed polygon.
+
+        Note that this function assumes that the coordinates of the last point are the same as the first point.
+
+        Args:
+            vertex_positions (npt.NDArray[np.float64]): Coordinates
+
+        Returns:
+            float: Energy of the system
+        """
+        return -jax.jacrev(self.energy)(vertex_positions)
+
+    @partial(jax.jit, static_argnums=0)
+    def energy_force(
+        self, vertex_positions: npt.NDArray[np.float64]
+    ) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+        """Compute the energy and force
+
+        Args:
+            vertex_positions (npt.NDArray[np.float64]): Coordinates
+
+        Returns:
+            tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]: Energy and force
+        """
+        energy, vjp = jax.vjp(self.energy, vertex_positions)
+        (force,) = jax.vmap(vjp, in_axes=0)(-1 * jnp.eye(len(energy)))
+        return energy, force
