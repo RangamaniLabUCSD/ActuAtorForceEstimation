@@ -42,6 +42,7 @@ setup(
     license="MPL2",
     packages=find_packages(),
     include_package_data=True,
+    python_requires=">=3.9",
     setup_requires=[] + pytest_runner,
     # url='http://www.my_package.com',  # Website
     # install_requires=[],              # Required packages, pulls from pip if needed; do not use for Conda deployment
