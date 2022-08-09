@@ -80,6 +80,9 @@ def make_movie(file, fps: int = 30, dpi: int = 100, skip: int = 100):
     fig = plt.figure(figsize=(5, 5))
     ax = fig.add_subplot(autoscale_on=False, xlim=x_lim, ylim=y_lim)
 
+    # flip y-axis
+    ax.set_ylim(ax.get_ylim()[::-1])
+
     (original_line,) = ax.plot(original_coords[:, 0], original_coords[:, 1], color="k")
 
     (line,) = ax.plot(c[0][:, 0], c[0][:, 1], color="r")
@@ -170,4 +173,4 @@ def make_movie(file, fps: int = 30, dpi: int = 100, skip: int = 100):
 if __name__ == "__main__":
     ## BATCH RENDER
     f_movie = partial(make_movie, fps=30, dpi=200, skip=100)
-    r = process_map(f_movie, files, max_workers=8)
+    r = process_map(f_movie, files, max_workers=6)

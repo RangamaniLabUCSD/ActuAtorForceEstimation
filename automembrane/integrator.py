@@ -54,10 +54,10 @@ def fwd_euler_integrator(
 
             # Calculate energy and force
             energy_log[i], force = mat._energy_force(coords)
-            force_log[i] = -force / dualLengths
+            force_log[i] = force / dualLengths
 
             # c_t+1 = c_t - force * dt
-            coords = np.array(coords - np.sum(force, axis=0) * dt)
+            coords = np.array(coords + np.sum(force, axis=0) * dt)
             coords[-1] = coords[0]
             if i < n_steps:
                 coord_log[i + 1] = coords
@@ -66,9 +66,10 @@ def fwd_euler_integrator(
     else:
         for i in tqdm(range(0, n_steps), desc="Energy relaxation"):
             energy_log[i], force = mat._energy_force(coords)
-            # c_t+1 = c_t - force * dt
-            coords = np.array(coords - np.sum(force, axis=0) * dt)
+            # c_t+1 = c_t + force * dt
+            coords = np.array(coords + np.sum(force, axis=0) * dt)
             coords[-1] = coords[0]
+        energy_log[-1] = mat._energy(coords)
         return coords, energy_log
 
     # print(
