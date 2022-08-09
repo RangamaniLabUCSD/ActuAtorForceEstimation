@@ -5,19 +5,13 @@ Unit and regression test for the automembrane package.
 # Import package, test suite, and other packages as needed
 import sys
 
-import pytest
-
 import automembrane
-
-from automembrane.energy import ClosedPlaneCurveMaterial, OpenPlaneCurveMaterial
-
 import automembrane.util as u
-
-from jax.config import config
-
-import numpy as np
-
 import jax
+import numpy as np
+import pytest
+from automembrane.energy import ClosedPlaneCurveMaterial, OpenPlaneCurveMaterial
+from jax.config import config
 
 config.update("jax_enable_x64", True)
 

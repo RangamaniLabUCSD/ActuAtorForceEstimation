@@ -4,12 +4,11 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-import numpy as np
 from typing import Callable
-import numpy.typing as npt
 
 import jax
-import matplotlib.pyplot as plt
+import numpy as np
+import numpy.typing as npt
 
 
 def ellipse(
@@ -63,29 +62,6 @@ def cos_curve(nVertex: int):
     vertexPositions = np.hstack((x, y))
     isClosed = False
     return vertexPositions, isClosed
-
-
-def matplotlibStyle(small: float = 6, medium: float = 8, large: float = 10):
-    """Set matplotlib plotting style
-
-    Args:
-        s (int, optional): Small size. Defaults to 6.
-        m (int, optional): Medium size. Defaults to 8.
-        l (int, optional): Large size. Defaults to 10.
-    """
-    plt.rcParams["font.sans-serif"] = "Arial"
-    plt.rcParams["font.family"] = "sans-serif"
-    plt.rcParams["lines.linewidth"] = 2
-    plt.rcParams["savefig.dpi"] = 600
-    # mpl.rcParams.update({'font.size': 8})
-    plt.rc("font", size=large)  # controls default text sizes
-    plt.rc("axes", titlesize=large)  # fontsize of the axes title
-    plt.rc("axes", labelsize=medium)  # fontsize of the x and y labels
-    plt.rc("xtick", labelsize=medium)  # fontsize of the tick labels
-    plt.rc("ytick", labelsize=medium)  # fontsize of the tick labels
-    plt.rc("legend", fontsize=small, frameon=False)  # legend fontsize
-    plt.rc("figure", titlesize=large)  # fontsize of the figure title
-    plt.rc("pdf", fonttype=42)
 
 
 def egrad(g: Callable) -> Callable:

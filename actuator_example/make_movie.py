@@ -21,11 +21,12 @@ from tqdm.contrib.concurrent import process_map
 import automembrane.util as u
 from automembrane.energy import ClosedPlaneCurveMaterial
 from automembrane.integrator import fwd_euler_integrator
+import automembrane.plot_helper as ph
 
 from actuator_constants import files, images
 
 jax.config.update("jax_enable_x64", True)
-u.matplotlibStyle(small=10, medium=12, large=14)
+ph.matplotlibStyle(small=10, medium=12, large=14)
 
 
 # Instantiate material properties

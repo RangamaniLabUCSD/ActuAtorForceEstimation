@@ -9,7 +9,6 @@ dependencies:
   - pip
   - jax
   - numpy
-  - matplotlib
   - tqdm
 
     # Testing
