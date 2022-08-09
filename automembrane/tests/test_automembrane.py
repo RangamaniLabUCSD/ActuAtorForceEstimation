@@ -54,8 +54,8 @@ def test_closedplanecurvematerial():
 
         m = ClosedPlaneCurveMaterial(0, 0, 0)
         e, f = m.energy_force(g)
-        assert np.testing.assert_allclose(e, np.zeros_like(e))
-        assert np.testing.assert_allclose(f, np.zeros_like(f))
+        np.testing.assert_allclose(e, np.zeros_like(e))
+        np.testing.assert_allclose(f, np.zeros_like(f))
 
         # Ensure last point is valid
         g2 = g[:-1]
