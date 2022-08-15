@@ -107,6 +107,8 @@ def make_movie(
         width=0.1,
         zorder=10,
     )
+    ax.set_ylabel(r"X (μm)")
+    ax.set_xlabel(r"Y (μm)")
 
     time_template = "Iteration = %d"
     time_text = ax.text(0.05, 0.9, "", transform=ax.transAxes)
