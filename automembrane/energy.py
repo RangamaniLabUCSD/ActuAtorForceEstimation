@@ -177,6 +177,63 @@ class ClosedPlaneCurveMaterial(Material):
         self._check_valid(vertex_positions)
         return self._force(vertex_positions)
 
+    def edge_curvature(
+        self, vertex_positions: npt.NDArray[np.float64]
+    ) -> npt.NDArray[np.float64]:
+        """Compute edge curvature
+        Args:
+            vertex_positions (npt.NDArray[np.float64]): Coordinates
+
+        Returns:
+            npt.NDArray[np.float64]: edge curvature
+        """
+        d_pos = jnp.roll(vertex_positions[:-1], -1, axis=0) - vertex_positions[:-1]
+        edgeLengths = jnp.linalg.norm(d_pos, axis=1)
+
+        edgeAbsoluteAngles = jnp.arctan2(d_pos[:, 1], d_pos[:, 0])
+
+        vertexTurningAngles =    (
+            jnp.roll(edgeAbsoluteAngles, -1) - edgeAbsoluteAngles
+        ) % (2 * jnp.pi)
+        vertexTurningAngles = (vertexTurningAngles + jnp.pi) % (2 * jnp.pi) - jnp.pi
+
+        tan_vertex_turning_angles = jnp.tan(vertexTurningAngles / 2)
+        print("edge length: ", edgeLengths)
+        edgeCurvatures = (
+            tan_vertex_turning_angles + jnp.roll(tan_vertex_turning_angles, 1)
+        ) / edgeLengths
+        return edgeCurvatures
+
+    def vertex_dual_length(
+        self, vertex_positions: npt.NDArray[np.float64]
+    ) -> npt.NDArray[np.float64]:
+        """Compute dual edge length
+        Args:
+            vertex_positions (npt.NDArray[np.float64]): Coordinates
+
+        Returns:
+            npt.NDArray[np.float64]: vertex dual length
+        """
+        edgeLengths = self.edge_length(vertex_positions)
+        dualLengths = ((edgeLengths + np.roll(edgeLengths, 1)) / 2.0).reshape(-1, 1)
+        dualLengths = np.vstack((dualLengths, dualLengths[0]))
+
+        return dualLengths
+
+    def edge_length(
+        self, vertex_positions: npt.NDArray[np.float64]
+    ) -> npt.NDArray[np.float64]:
+        """Compute edge length
+        Args:
+            vertex_positions (npt.NDArray[np.float64]): Coordinates
+
+        Returns:
+            npt.NDArray[np.float64]: edge length
+        """
+        dc = np.roll(vertex_positions[:-1], -1, axis=0) - vertex_positions[:-1]
+        edgeLengths = np.linalg.norm(dc, axis=1)
+        return edgeLengths
+
     @partial(jax.jit, static_argnums=0)
     def _energy_force(
         self,
