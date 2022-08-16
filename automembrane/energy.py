@@ -132,7 +132,7 @@ class ClosedPlaneCurveMaterial(Material):
         bendingEnergy = self.Kb * jnp.sum(edgeCurvatures * edgeCurvatures * edgeLengths)
         surfaceEnergy = self.Ksg * jnp.sum(edgeLengths)
         regularizationEnergy = self.Ksl * jnp.sum(
-            ((edgeLengths - referenceEdgeLength)**2 / referenceEdgeLength)
+            ((edgeLengths - referenceEdgeLength) / referenceEdgeLength) ** 2
         )
         return jnp.array([bendingEnergy, surfaceEnergy, regularizationEnergy])
 

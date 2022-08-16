@@ -93,7 +93,8 @@ def get_dimensional_tension(Ksg_, Kb, coords):
 def run(file, target_edge_length, _Ksg_):
     Ksg_coords_force = []
     coords, original_coords = preprocess_mesh(file, ifResample=True, target_edge_length=target_edge_length)
-    relaxed_coords = relax_bending(coords, Kb=0.1, dt=1e-5, n_iter=math.floor(0.2 / 1e-5))
+    relaxed_coords = relax_bending(coords, Kb=0.1, dt=1e-7, n_iter=math.floor(0.5 / 1e-7))
+    # relaxed_coords, _ = resample(relaxed_coords, target_edge_length=target_edge_length)
     for Ksg_ in _Ksg_:
         # Instantiate material properties
         Kb = 0.1
@@ -101,23 +102,23 @@ def run(file, target_edge_length, _Ksg_):
         parameters = {
             "Kb": Kb / 4,  # Bending modulus (pN um; original 1e-19 J)
             "Ksg": Ksg,  # Global stretching modulus (pN um/um^2; original 0.05 mN/m)
-            "Ksl": 0.1 * Ksg,
+            "Ksl": 0,
         }
         mem = ClosedPlaneCurveMaterial(**parameters)
         # print("dimensional tension: ", mem.Ksg)
 
         # Compute force density
-        relaxed_forces = sum(mem.force(relaxed_coords)) / ClosedPlaneCurveGeometry.vertex_dual_length(
+        relaxed_forces = np.array([force/ClosedPlaneCurveGeometry.vertex_dual_length(
             relaxed_coords
-        )        
-        Ksg_coords_force.append(np.stack((relaxed_coords, relaxed_forces), axis=0))
+        ) for force in mem.force(relaxed_coords)])         
+        Ksg_coords_force.append(np.concatenate(([relaxed_coords], relaxed_forces), axis=0))
     Ksg_coords_force = np.asarray(Ksg_coords_force)
-    np.savez(f"data/{file.stem}", _Ksg_=_Ksg_, Ksg_coords_force=Ksg_coords_force)
+    np.savez(f"data/{file.stem}", _Ksg_=_Ksg_, original_coords = original_coords, Ksg_coords_force=Ksg_coords_force)
 
 
 if __name__ == "__main__":
     ## BATCH RENDER
     from actuator_constants import files
-    f_run = partial(run, target_edge_length=0.05, _Ksg_ = np.linspace(0,1,1+2**2))
+    f_run = partial(run, target_edge_length=0.1, _Ksg_ = np.linspace(0,1,1+2**3))
     r = process_map(f_run, files, max_workers=6)
         

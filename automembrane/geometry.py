@@ -72,3 +72,31 @@ class ClosedPlaneCurveGeometry:
         dc = np.roll(vertex_positions[:-1], -1, axis=0) - vertex_positions[:-1]
         edgeLengths = np.linalg.norm(dc, axis=1)
         return edgeLengths
+    
+    @staticmethod
+    # @jax.jit
+    def vertex_normal(
+        vertex_positions: npt.NDArray[np.float64], orientation: str = "cw",
+    ) -> npt.NDArray[np.float64]:
+        """Compute length weighted vertex normal
+        Args:
+            vertex_positions (npt.NDArray[np.float64]): Coordinates
+            orientation (str): normal orientation convention 
+
+        Returns:
+            npt.NDArray[np.float64]: vertex normal
+        """
+        dc = np.roll(vertex_positions[:-1], -1, axis=0) - vertex_positions[:-1]
+        if orientation == "ccw":
+            edge_normal = np.stack([-dc[:,1], dc[:,0]], axis = 1)
+        elif orientation == "cw": 
+            edge_normal = np.stack([dc[:,1], -dc[:,0]], axis = 1)
+        else: 
+            raise RuntimeError(
+                "Orientation is either 'ccw' or 'cw'!"
+            )
+            
+        vertex_normal = (edge_normal + np.roll(edge_normal, 1, axis=0))
+        vertex_normal = vertex_normal / np.linalg.norm(vertex_normal, axis=1).reshape(-1,1)
+        vertex_normal = np.vstack((vertex_normal, vertex_normal[0]))
+        return vertex_normal
