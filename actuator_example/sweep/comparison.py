@@ -36,18 +36,17 @@ cm = mpl.cm.viridis_r
 
 # Instantiate material properties
 parameters = {
-    "Kb": 1 / 4,  # Bending modulus (pN um; original 1e-19 J)
+    "Kb": 0.1 / 4,  # Bending modulus (pN um; original 1e-19 J)
     "Ksg": 1,  # Global stretching modulus (pN um/um^2; original 0.05 mN/m)
-    "Ksl": 10,
+    "Ksl": 1,
 }
 mem = ClosedPlaneCurveMaterial(**parameters)
 
 # Discretization settings
 target_edge_length = 0.05  # target edge length in um for resampling
-# total_time = 0.001
-dt_ = 3e-5 # Timestep
-n_iter = 20000  # Number of relaxation steps
-# n_iter = math.floor(total_time / dt)  # Number of relaxation steps
+total_time = 0.1
+dt = 5e-6  # Timestep
+n_iter = math.floor(total_time / dt)  # Number of relaxation steps
 
 data = defaultdict(dict)
 
@@ -82,15 +81,17 @@ def run(material, file, ifResample=False):
     else:
         coords = original_coords
 
+    # curvature_scale = 1
 
     # length_scale = np.sum(material.edge_length(coords)) / 2 / np.pi
+    
     curvature_scale = np.max(material.edge_curvature(coords))
-    original_coords = original_coords * curvature_scale
-    coords = coords * curvature_scale
+    # original_coords = original_coords * curvature_scale
+    # coords = coords * curvature_scale
+    # dt = dt_ / parameters["Kb"] / curvature_scale**2
 
     # Perform energy relaxation
     relaxed_coords = coords
-    dt = dt_ / parameters["Kb"] / curvature_scale**2
     if n_iter > 0:
         relaxed_coords, energy_log = fwd_euler_integrator(
             relaxed_coords, material, n_steps=n_iter, dt=dt
@@ -153,7 +154,7 @@ def make_movie(
         angles="xy",
         units="xy",
         label="force",
-        scale=4e1,
+        # scale=4e0,
         scale_units="xy",
         width=0.1,
         zorder=10,
@@ -211,13 +212,22 @@ if __name__ == "__main__":
     )
     for file in files:
         data, curvature_scale, material = run(mem, file, ifResample=True)
-        print(curvature_scale)
+        print("tension number: ", 0.25 * material.Ksg / material.Kb / curvature_scale**2)
         make_movie(
             file.stem,
-            data[file.stem]["original_coords"] / curvature_scale,
-            data[file.stem]["relaxed_coords"] / curvature_scale,
-            data[file.stem]["relaxed_forces"] * 0.1 * curvature_scale**3,
+            data[file.stem]["original_coords"],
+            data[file.stem]["relaxed_coords"],
+            data[file.stem]["relaxed_forces"],
             fps=30,
             dpi=200,
             skip=100,
         )
+        # make_movie(
+        #     file.stem,
+        #     data[file.stem]["original_coords"] / curvature_scale,
+        #     data[file.stem]["relaxed_coords"] / curvature_scale,
+        #     data[file.stem]["relaxed_forces"] * 0.1 * curvature_scale**3,
+        #     fps=30,
+        #     dpi=200,
+        #     skip=100,
+        # )
