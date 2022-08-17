@@ -86,39 +86,12 @@ def relax_bending(coords, Kb, dt_, n_iter):
     return relaxed_coords   
 
 
-def get_dimensional_tension(Ksg_, Kb, coords):
-    curvature_scale = np.max(ClosedPlaneCurveGeometry.edge_curvature(coords))
-    return 4 * Kb * curvature_scale**2 * Ksg_
-
-def get_dimensional_time_step(dt_, Kb, coords):
-    curvature_scale = np.max(ClosedPlaneCurveGeometry.edge_curvature(coords))
-    return dt_/(4 * Kb * curvature_scale**2) 
-
 def run(file, n_vertices, _Ksg_):
-    Ksg_coords_force = []
     coords, original_coords = preprocess_mesh(file, ifResample=True, n_vertices=n_vertices)
     relaxed_coords = coords
-    # relaxed_coords = relax_bending(coords, Kb=0.1, dt_=2e-6, n_iter=int(1e6))
+    relaxed_coords = relax_bending(coords, Kb=0.1, dt_=2e-6, n_iter=int(1e6))
     # relaxed_coords, _ = resample(relaxed_coords, n_vertices=n_vertices)
-    for Ksg_ in _Ksg_:
-        # Instantiate material properties
-        Kb = 0.1
-        Ksg = get_dimensional_tension(Ksg_, Kb, coords)
-        parameters = {
-            "Kb": Kb / 4,  # Bending modulus (pN um; original 1e-19 J)
-            "Ksg": Ksg,  # Global stretching modulus (pN um/um^2; original 0.05 mN/m)
-            "Ksl": 0,
-        }
-        mem = ClosedPlaneCurveMaterial(**parameters)
-        print(f"dimensional tension for {file.stem}: ", mem.Ksg)
-
-        # Compute force density
-        relaxed_forces = np.array([force/ClosedPlaneCurveGeometry.vertex_dual_length(
-            relaxed_coords
-        ) for force in mem.force(relaxed_coords)])         
-        Ksg_coords_force.append(np.concatenate(([relaxed_coords], relaxed_forces), axis=0))
-    Ksg_coords_force = np.asarray(Ksg_coords_force)
-    np.savez(f"data/{file.stem}", _Ksg_=_Ksg_, original_coords = original_coords, Ksg_coords_force=Ksg_coords_force)
+    np.savez(f"relaxed_coords/{file.stem}", relaxed_coords = relaxed_coords, original_coords = original_coords)
 
 
 if __name__ == "__main__":
