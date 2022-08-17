@@ -187,11 +187,11 @@ def run(file):
         from variation_run import get_dimensional_tension
         plt.title("$\\bar{\sigma}=$" + f"{Ksg_}" + 
                   "$, \sigma=$" + f"{math.floor(get_dimensional_tension(Ksg_=Ksg_, Kb=1, coords = coord))}$\kappa$")
-        plt.savefig("figures/" + file.stem + f"_Ksg{Ksg_}" + ".png")
+        plt.savefig("figures/" + file.stem + f"_Ksg{math.floor(Ksg_*1000)}" + ".png")
         plt.close()
 
     
 if __name__ == "__main__":
     ## BATCH RENDER
     from actuator_constants import files
-    r = process_map(run, files, max_workers=6)
+    r = process_map(run, files, max_workers=12)

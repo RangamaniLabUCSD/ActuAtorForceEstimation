@@ -70,7 +70,7 @@ def relax_bending(coords, Kb, dt, n_iter):
     # Instantiate material properties
     parameters = {
         "Kb": Kb / 4, 
-        "Ksg": 0,
+        "Ksg": get_dimensional_tension(0.2, Kb, coords),
         "Ksl": 10 * Kb,
     }
     mem = ClosedPlaneCurveMaterial(**parameters)
@@ -93,7 +93,7 @@ def get_dimensional_tension(Ksg_, Kb, coords):
 def run(file, target_edge_length, _Ksg_):
     Ksg_coords_force = []
     coords, original_coords = preprocess_mesh(file, ifResample=True, target_edge_length=target_edge_length)
-    relaxed_coords = relax_bending(coords, Kb=0.1, dt=1e-7, n_iter=math.floor(0.5 / 1e-7))
+    relaxed_coords = relax_bending(coords, Kb=0.1, dt=1e-7, n_iter=math.floor(0.2 / 1e-7))
     # relaxed_coords, _ = resample(relaxed_coords, target_edge_length=target_edge_length)
     for Ksg_ in _Ksg_:
         # Instantiate material properties
@@ -119,6 +119,6 @@ def run(file, target_edge_length, _Ksg_):
 if __name__ == "__main__":
     ## BATCH RENDER
     from actuator_constants import files
-    f_run = partial(run, target_edge_length=0.1, _Ksg_ = np.linspace(0,1,1+2**3))
-    r = process_map(f_run, files, max_workers=6)
+    f_run = partial(run, target_edge_length=0.2, _Ksg_ = np.linspace(0,0.2,1+2**3))
+    r = process_map(f_run, files, max_workers=12)
         
