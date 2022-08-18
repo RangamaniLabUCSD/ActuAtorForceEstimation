@@ -36,8 +36,8 @@ padding = 2
 cm = mpl.cm.viridis_r
 
 def get_dimensional_tension(Ksg_, Kb, coords):
-    curvature_scale = np.max(ClosedPlaneCurveGeometry.edge_curvature(coords))
-    return Kb * curvature_scale**2 * Ksg_
+    curvature_scale = np.max(abs(ClosedPlaneCurveGeometry.edge_curvature(coords)))
+    return 4 * Kb * curvature_scale**2 * Ksg_
 
 def get_force_density(parameters, coords):
     mem = ClosedPlaneCurveMaterial(**parameters)

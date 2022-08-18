@@ -45,7 +45,7 @@ def plot_force(
     ax = fig.add_subplot(spec[0], autoscale_on=False, xlim=(np.min(_Ksg_), np.max(_Ksg_)), ylim=(0,1))
     # ax = fig.add_subplot(autoscale_on=False, xlim=x_lim, ylim=y_lim)
     ax.vlines(Ksg_, 0, 1, linestyles="solid", colors ="r", linewidth=6)
-    ax.set_xticks([np.min(_Ksg_), 0.25, np.max(_Ksg_)])
+    ax.set_xticks([np.min(_Ksg_), 1, np.max(_Ksg_)])
     ax.set_xticklabels(["Bending", "Transition", "Tension"])
     ax.get_yaxis().set_visible(False)
     ax.xaxis.tick_top()
@@ -95,7 +95,7 @@ def plot_force(
     lc.set_linewidth(4)
     line = ax.add_collection(lc)
     cbar = fig.colorbar(line, ax=ax, ticks=[-1, 0, 1])
-    cbar.ax.set_yticklabels(['Pulling', '0', 'Pushing'])
+    cbar.ax.set_yticklabels(['Pull', '0', 'Push'])
     # curvature_scale = np.max(ClosedPlaneCurveGeometry.edge_curvature(relaxed_coords))
     cbar.ax.get_yaxis().labelpad = 20
     # cbar.ax.set_ylabel("Force Density"+f"({round_sig(max_norm * curvature_scale**(-3), 3)}$\kappa$",  rotation=270)
