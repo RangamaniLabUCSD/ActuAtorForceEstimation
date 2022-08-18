@@ -66,12 +66,12 @@ def preprocess_mesh(file, ifResample, n_vertices):
     
     return coords, original_coords
 
-def relax_bending(coords, Kb, dt_, n_iter):
+def relax_bending(coords, Kb, Ksg, Ksl, dt_, n_iter):
     # Instantiate material properties
     parameters = {
         "Kb": Kb / 4, 
-        "Ksg": 1 * Kb,
-        "Ksl": 0.1 * Kb,
+        "Ksg": Ksg,
+        "Ksl": Ksl,
     }
     mem = ClosedPlaneCurveMaterial(**parameters)
     # Perform energy relaxation
@@ -93,20 +93,26 @@ def get_dimensional_time_step(dt_, Kb, coords):
 def run(file, n_vertices):
     coords, original_coords = preprocess_mesh(file, ifResample=True, n_vertices=n_vertices)
     relaxed_coords = coords
+    relaxed_coords, _ = resample(relaxed_coords, n_vertices=n_vertices)
     if file.stem == "34D-grid2-s2_002_16":
-        dt_ = 5e-7
-        n_iter = int(1e6)
-    if file.stem == "34D-grid2-s3_028_16":
-        dt_ = 1e-10
+        dt_ = 5e-6
         n_iter = int(1e5)
-    if file.stem == "34D-grid2-s5_005_16":
-        dt_ = 1e-9
-        n_iter = int(1e7)
+        relaxed_coords = relax_bending(coords, Kb=1, Ksg=1, Ksl = 0.1, dt_=dt_, n_iter=n_iter)
+    elif file.stem == "34D-grid2-s3_028_16":
+        dt_ = 1e-8
+        n_iter = int(2e5)
+        relaxed_coords = relax_bending(coords, Kb=1, Ksg=1, Ksl = 1, dt_=dt_, n_iter=n_iter)
+    elif file.stem == "34D-grid2-s5_005_16":
+        dt_ = 3e-7
+        n_iter = int(1e5)
+        relaxed_coords = relax_bending(coords, Kb=1, Ksg=20, Ksl = 1, dt_=dt_, n_iter=n_iter)
+        dt_ = 7e-8
+        n_iter = int(5e4)
+        relaxed_coords = relax_bending(relaxed_coords, Kb=1, Ksg=1, Ksl = 0.1, dt_=dt_, n_iter=n_iter)
     else: 
         dt_ = 1e-5
         n_iter = int(1e5)
-    relaxed_coords = relax_bending(coords, Kb=1, dt_=dt_, n_iter=n_iter)
-    # relaxed_coords, _ = resample(relaxed_coords, n_vertices=n_vertices)
+        relaxed_coords = relax_bending(coords, Kb=1, Ksg=1, Ksl = 0.1, dt_=dt_, n_iter=n_iter)
     if file.stem ==  "34D-grid3-ActA1_007_16":
         relaxed_coords = np.flip(relaxed_coords, axis=0)
         original_coords = np.flip(original_coords, axis=0)

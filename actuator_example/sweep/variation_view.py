@@ -42,10 +42,6 @@ def plot_force(
     original_coords,
     relaxed_coords,
     relaxed_force,
-    fps: int = 30,
-    dpi: int = 100,
-    skip: int = 100,
-    interactive: bool = False,
 ):
     x_lim = np.array([np.min(relaxed_coords[:, 0]), np.max(relaxed_coords[:, 0])]) + [
         -padding,
@@ -60,7 +56,7 @@ def plot_force(
     # flip y-axis
     ax.set_ylim(ax.get_ylim()[::-1])  
     
-     # nucleus cell trace
+    # nucleus cell trace
     with Image.open(f"../raw_images/{file_stem}.TIF") as im:
         pixel_scale = images[file_stem]
         x_lim_pix = (x_lim / pixel_scale).round()
@@ -75,7 +71,7 @@ def plot_force(
             zorder=0,
             cmap=plt.cm.Greys_r,
         )
-    (original_line,) = ax.plot(original_coords[:, 0], original_coords[:, 1], 'o', linewidth=0.2, color="k")
+    (original_line,) = ax.plot(original_coords[:, 0], original_coords[:, 1], '-o', linewidth=0.1, color="k")
     (line,) = ax.plot(
         relaxed_coords[:, 0], relaxed_coords[:, 1], 'o', linewidth=0.2, color="r"
     )
@@ -150,7 +146,7 @@ def run(file):
     fig = plt.figure(figsize=(5, 5))
 
     moviewriter = animation.FFMpegWriter(fps=1)
-    with moviewriter.saving(fig, f"figures/{file.stem}.mp4", dpi=200):
+    with moviewriter.saving(fig, f"figures/{file.stem}.mp4", dpi=100):
         for Ksg_count, Ksg_ in tqdm(enumerate(_Ksg_), desc="Rendering plots"):
             forces = Ksg_force[Ksg_count][1:]
             total_force = np.sum(forces, axis=0)
@@ -171,9 +167,6 @@ def run(file):
                 original_coords,
                 relaxed_coords,
                 total_force,
-                fps=30,
-                dpi=200,
-                skip=100,
             )
             # plot_force(
             #     file.stem,
@@ -203,4 +196,4 @@ def run(file):
 if __name__ == "__main__":
     ## BATCH RENDER
     from actuator_constants import files
-    r = process_map(run, files, max_workers=12)
+    r = process_map(run, files, max_workers=6)
