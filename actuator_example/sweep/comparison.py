@@ -20,6 +20,7 @@ from tqdm.auto import tqdm
 from tqdm.contrib.concurrent import process_map
 
 import automembrane.util as u
+from automembrane.geometry import ClosedPlaneCurveGeometry
 from automembrane.energy import ClosedPlaneCurveMaterial
 from automembrane.integrator import fwd_euler_integrator
 import automembrane.plot_helper as ph
@@ -28,144 +29,43 @@ from actuator_constants import files, images
 
 jax.config.update("jax_enable_x64", True)
 ph.matplotlibStyle(small=10, medium=12, large=14)
-
-
 # Plotting settings
 padding = 2
 cm = mpl.cm.viridis_r
 
-# Instantiate material properties
-parameters = {
-    "Kb": 0.1 / 4,  # Bending modulus (pN um; original 1e-19 J)
-    "Ksg": 1,  # Global stretching modulus (pN um/um^2; original 0.05 mN/m)
-    "Ksl": 1,
-}
-mem = ClosedPlaneCurveMaterial(**parameters)
-
-# Discretization settings
-target_edge_length = 0.05  # target edge length in um for resampling
-total_time = 0.1
-dt = 5e-6  # Timestep
-n_iter = math.floor(total_time / dt)  # Number of relaxation steps
-
-data = defaultdict(dict)
-
-def resample(original_coords, target_edge_length):
-    total_length = np.sum(
-        np.linalg.norm(
-            np.roll(original_coords[:-1], -1, axis=0) - original_coords[:-1], axis=1
-        )
-    )
-    n_vertices = math.floor(total_length / target_edge_length)
-    print(f"  Resampling to {n_vertices} vertices")
-    # Periodic cubic B-spline interpolation with no smoothing (s=0)
-    tck, _ = splprep([original_coords[:, 0], original_coords[:, 1]], s=0, per=True)
-
-    xi, yi = splev(np.linspace(0, 1, n_vertices), tck)
-    coords = np.hstack((xi.reshape(-1, 1), yi.reshape(-1, 1)))
-    return coords, tck
-
-
-def run(material, file, ifResample=False):
-    k = file.stem
-
-    print("Processing:", k)
-    original_coords = np.loadtxt(file)
-    original_coords = np.vstack(
-        (original_coords, original_coords[0])
-    )  # Energy expects last point to equal first
-
-    if ifResample:
-        coords, tck = resample(original_coords, target_edge_length)
-        data[k]["spline"] = tck
-    else:
-        coords = original_coords
-
-    # curvature_scale = 1
-
-    # length_scale = np.sum(material.edge_length(coords)) / 2 / np.pi
-    
-    curvature_scale = np.max(material.edge_curvature(coords))
-    # original_coords = original_coords * curvature_scale
-    # coords = coords * curvature_scale
-    # dt = dt_ / parameters["Kb"] / curvature_scale**2
-
-    # Perform energy relaxation
-    relaxed_coords = coords
-    if n_iter > 0:
-        relaxed_coords, energy_log = fwd_euler_integrator(
-            relaxed_coords, material, n_steps=n_iter, dt=dt
-        )
-        print(
-            f"  DELTA E: {energy_log[-1] - energy_log[0]}; E_before: {energy_log[0]}; E_after: {energy_log[-1]}"
-        )
-
-    # Compute force density
-    relaxed_forces = sum(material.force(relaxed_coords)) / material.vertex_dual_length(
-        relaxed_coords
-    )
-    
-    
-    np.save("foo.npy", relaxed_coords)
-    data[k]["original_coords"] = original_coords
-    data[k]["relaxed_coords"] = relaxed_coords
-    data[k]["relaxed_forces"] = relaxed_forces
-
-    return data, curvature_scale, material
-
-
-def make_movie(
+def plot_force(
+    fig,
     file_stem,
     original_coords,
     relaxed_coords,
-    relaxed_forces,
-    fps: int = 30,
-    dpi: int = 100,
-    skip: int = 100,
-    interactive: bool = False,
+    relaxed_force,
+    _Ksg_,
+    Ksg_,
 ):
-    x_lim = np.array([np.min(original_coords[:, 0]), np.max(original_coords[:, 0])]) + [
-        -padding,
-        padding
-    ]
-    y_lim = np.array([np.min(original_coords[:, 1]), np.max(original_coords[:, 1])]) + [
+    spec = fig.add_gridspec(ncols=1, nrows=2,
+                          height_ratios=[1,40])
+    ax = fig.add_subplot(spec[0], autoscale_on=False, xlim=(np.min(_Ksg_), np.max(_Ksg_)), ylim=(0,1))
+    # ax = fig.add_subplot(autoscale_on=False, xlim=x_lim, ylim=y_lim)
+    ax.vlines(Ksg_, 0, 1, linestyles="solid", colors ="r", linewidth=6)
+    ax.set_xticks([np.min(_Ksg_), 0.25, np.max(_Ksg_)])
+    ax.set_xticklabels(["Bending", "", "Tension"])
+    ax.get_yaxis().set_visible(False)
+    ax.xaxis.tick_top()
+
+    x_lim = np.array([np.min(relaxed_coords[:, 0]), np.max(relaxed_coords[:, 0])]) + [
         -padding,
         padding,
     ]
-
-    fig = plt.figure(figsize=(5, 5))
-    ax = fig.add_subplot(autoscale_on=False, xlim=x_lim, ylim=y_lim)
-
+    y_lim = np.array([np.min(relaxed_coords[:, 1]), np.max(relaxed_coords[:, 1])]) + [
+        -padding,
+        padding,
+    ]
+    ax = fig.add_subplot(spec[1], autoscale_on=False, xlim=x_lim, ylim=y_lim)
     # flip y-axis
-    ax.set_ylim(ax.get_ylim()[::-1])
-
-    # (original_line,) = ax.plot(original_coords[:, 0], original_coords[:, 1], color="k")
-
-    (line,) = ax.plot(relaxed_coords[:, 0], relaxed_coords[:, 1], linewidth=0.2, color="r")
-    f_mag = np.linalg.norm(relaxed_forces, axis=1)
-
-    q = ax.quiver(
-        relaxed_coords[:, 0],
-        relaxed_coords[:, 1],
-        relaxed_forces[:, 0],
-        relaxed_forces[:, 1],
-        f_mag,
-        cmap=mpl.cm.viridis_r,
-        angles="xy",
-        units="xy",
-        label="force",
-        # scale=4e0,
-        scale_units="xy",
-        width=0.1,
-        zorder=10,
-    )
-    ax.set_ylabel(r"X (μm)")
-    ax.set_xlabel(r"Y (μm)")
-
-    time_template = "Iteration = %d"
-    time_text = ax.text(0.05, 0.9, "", transform=ax.transAxes)
-
-    with Image.open(f"raw_images/{file_stem}.TIF") as im:
+    ax.set_ylim(ax.get_ylim()[::-1])  
+    
+    # nucleus cell trace
+    with Image.open(f"../raw_images/{file_stem}.TIF") as im:
         pixel_scale = images[file_stem]
         x_lim_pix = (x_lim / pixel_scale).round()
         y_lim_pix = (y_lim / pixel_scale).round()
@@ -179,55 +79,64 @@ def make_movie(
             zorder=0,
             cmap=plt.cm.Greys_r,
         )
+    
+    
+
+    # color-coded force
+    # max_norm = np.max(np.linalg.norm(relaxed_force, axis=1))
+    # normalized_relaxed_force = relaxed_force / max_norm
+    vertex_normal = ClosedPlaneCurveGeometry.vertex_normal(relaxed_coords)
+    signed_f_mag = np.sum(relaxed_force * vertex_normal, axis = 1)
+    signed_f_mag = signed_f_mag / np.max(abs(signed_f_mag))
+    points = relaxed_coords.reshape(-1, 1, 2)
+    segments = np.concatenate([points[:-1], points[1:]], axis=1)
+    from matplotlib.collections import LineCollection
+    norm = plt.Normalize(-abs(signed_f_mag).max(), abs(signed_f_mag).max())
+    lc = LineCollection(segments, cmap='PRGn', norm=norm)
+    lc.set_array(signed_f_mag)
+    lc.set_linewidth(4)
+    line = ax.add_collection(lc)
+    cbar = fig.colorbar(line, ax=ax, ticks=[-1, 0, 1], pad=0.01)
+    cbar.ax.set_yticklabels(['Pulling', '0', 'Pushing'])
+    # curvature_scale = np.max(ClosedPlaneCurveGeometry.edge_curvature(relaxed_coords))
+    cbar.ax.get_yaxis().labelpad = 20
+    # cbar.ax.set_ylabel("Force Density"+f"({round_sig(max_norm * curvature_scale**(-3), 3)}$\kappa$",  rotation=270)
+    
+    ax.set_ylabel(r"X (μm)")
+    ax.set_xlabel(r"Y (μm)")
 
     # Shrink current axis
     box = ax.get_position()
     ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
+    
 
-    # ax.legend(loc="center left", bbox_to_anchor=(1, 0.5))
-    cbar = fig.colorbar(
-        q,
-        ax=ax,
+
+data = np.load("forces/34D-grid2-s2_002_16.npz")
+_Ksg_ = data["_Ksg_"]
+Ksg_force = data["Ksg_force"]
+
+data = np.load("relaxed_coords/34D-grid2-s2_002_16.npz")
+relaxed_coords = data["relaxed_coords"]
+original_coords = data["original_coords"]
+
+Ksg_ = 0.2
+forces = Ksg_force[3]
+total_force = np.sum(forces, axis=0)
+
+
+fig = plt.figure(figsize=(5, 5))
+
+plot_force(
+        fig,
+        "34D-grid2-s2_002_16",
+        original_coords,
+        relaxed_coords,
+        total_force,
+        _Ksg_,
+        Ksg_,
     )
-    cbar.ax.get_yaxis().labelpad = 20
-    cbar.ax.set_ylabel("Force Density ($\mathregular{pN/\mu m^2}$)", rotation=270)
-    plt.show()
 
+# ax = fig.add_subplot(autoscale_on=False, xlim=(np.min(_Ksg_), np.max(_Ksg_)), ylim=(0,1))
+# ax.vlines(Ksg_, 0, 1, linestyles="solid", colors ="k")
 
-if __name__ == "__main__":
-    ## BATCH RENDER
-    # f_movie = partial(make_movie, fps=30, dpi=200, skip=100)
-    # r = process_map(f_movie, files, max_workers=6)
-    from pathlib import Path
-    files = list(
-        map(
-            Path,
-            [
-                f"coordinates/{i}"
-                for i in [
-                    "cell1/34D-grid2-s3-acta1_001_16.txt",
-                ]
-            ],
-        )
-    )
-    for file in files:
-        data, curvature_scale, material = run(mem, file, ifResample=True)
-        print("tension number: ", 0.25 * material.Ksg / material.Kb / curvature_scale**2)
-        make_movie(
-            file.stem,
-            data[file.stem]["original_coords"],
-            data[file.stem]["relaxed_coords"],
-            data[file.stem]["relaxed_forces"],
-            fps=30,
-            dpi=200,
-            skip=100,
-        )
-        # make_movie(
-        #     file.stem,
-        #     data[file.stem]["original_coords"] / curvature_scale,
-        #     data[file.stem]["relaxed_coords"] / curvature_scale,
-        #     data[file.stem]["relaxed_forces"] * 0.1 * curvature_scale**3,
-        #     fps=30,
-        #     dpi=200,
-        #     skip=100,
-        # )
+plt.savefig("./test.png")

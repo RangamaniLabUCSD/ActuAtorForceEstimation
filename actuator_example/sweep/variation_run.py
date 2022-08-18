@@ -37,7 +37,7 @@ cm = mpl.cm.viridis_r
 
 def get_dimensional_tension(Ksg_, Kb, coords):
     curvature_scale = np.max(ClosedPlaneCurveGeometry.edge_curvature(coords))
-    return 4 * Kb * curvature_scale**2 * Ksg_
+    return Kb * curvature_scale**2 * Ksg_
 
 def get_force_density(parameters, coords):
     mem = ClosedPlaneCurveMaterial(**parameters)
@@ -68,7 +68,7 @@ def run(file, _Ksg_):
 if __name__ == "__main__":
     ## BATCH RENDER
     from actuator_constants import files
-    f_run = partial(run, _Ksg_ = np.linspace(0,1,1+2**6))
+    f_run = partial(run, _Ksg_ = np.linspace(0,2,1+2**6))
     r = process_map(f_run, files, max_workers=12)
         
         

@@ -35,6 +35,56 @@ ph.matplotlibStyle(small=10, medium=12, large=14)
 padding = 2
 cm = mpl.cm.viridis_r
 
+def plot_contour(
+    fig,
+    file_stem,
+    original_coords,
+    relaxed_coords,
+):
+    x_lim = np.array([np.min(relaxed_coords[:, 0]), np.max(relaxed_coords[:, 0])]) + [
+        -padding,
+        padding,
+    ]
+    y_lim = np.array([np.min(relaxed_coords[:, 1]), np.max(relaxed_coords[:, 1])]) + [
+        -padding,
+        padding,
+    ]
+    ax = fig.add_subplot(autoscale_on=False, xlim=x_lim, ylim=y_lim)
+    
+    # flip y-axis
+    ax.set_ylim(ax.get_ylim()[::-1])  
+    
+    # nucleus cell trace
+    with Image.open(f"../raw_images/{file_stem}.TIF") as im:
+        pixel_scale = images[file_stem]
+        x_lim_pix = (x_lim / pixel_scale).round()
+        y_lim_pix = (y_lim / pixel_scale).round()
+
+        im = im.crop((x_lim_pix[0], y_lim_pix[0], x_lim_pix[1], y_lim_pix[1]))
+
+        plt.imshow(
+            im,
+            alpha=0.6,
+            extent=(x_lim[0], x_lim[1], y_lim[1], y_lim[0]),
+            zorder=0,
+            cmap=plt.cm.Greys_r,
+        )
+    
+    (original_line,) = ax.plot(original_coords[:, 0], original_coords[:, 1], 'o', markersize = 0.2, color="k")
+    (line,) = ax.plot(
+        relaxed_coords[:, 0], relaxed_coords[:, 1],'--', linewidth=0.2, color="r"
+    )
+    # (line,) = ax.plot(
+    #     relaxed_coords[:, 0], relaxed_coords[:, 1], linewidth=1.5, color="r"
+    # )
+
+    ax.set_ylabel(r"X (μm)")
+    ax.set_xlabel(r"Y (μm)")
+
+    # Shrink current axis
+    box = ax.get_position()
+    ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
+    
 def resample(original_coords, n_vertices):
     # total_length = np.sum(
     #     np.linalg.norm(
@@ -113,6 +163,15 @@ def run(file, n_vertices):
         original_coords = np.flip(original_coords, axis=0)
     np.savez(f"relaxed_coords/{file.stem}", relaxed_coords = relaxed_coords, original_coords = original_coords)
 
+    fig = plt.figure(figsize=(5, 5))
+    plot_contour(
+        fig,
+        file.stem,
+        original_coords,
+        relaxed_coords,
+    )
+    plt.savefig("relaxed_coords/" + file.stem + ".png")
+    fig.clear()
 
 if __name__ == "__main__":
     ## BATCH RENDER
