@@ -4,6 +4,8 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+from typing import Union
+
 import numpy as np
 import numpy.typing as npt
 from tqdm.auto import tqdm
@@ -17,7 +19,10 @@ def fwd_euler_integrator(
     n_steps: int = int(1e5),
     dt: float = 5e-6,
     save_trajectory: bool = False,
-) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+) -> Union[
+    tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]],
+    tuple[npt.NDArray[np.float64], npt.NDArray[np.float64], npt.NDArray[np.float64]],
+]:
     """Perform forward Euler integration
 
     Args:
@@ -28,8 +33,9 @@ def fwd_euler_integrator(
         save_trajectory (bool, optional): Whether or not to save forces. Defaults to False.
 
     Returns:
-        Union[tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]],tuple[npt.NDArray[np.float64], npt.NDArray[np.float64], npt.NDArray[np.float64]]]: Returns coordinates, and
+       Union[ tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]], tuple[npt.NDArray[np.float64], npt.NDArray[np.float64], npt.NDArray[np.float64]], ]: Returns final coordinates and energies or trajectory of coordinates, energies and forces.
     """
+
     energy_shape = mat._energy(coords).shape
 
     energy_log = np.zeros((n_steps + 1, *energy_shape))
@@ -71,7 +77,3 @@ def fwd_euler_integrator(
             coords[-1] = coords[0]
         energy_log[-1] = mat._energy(coords)
         return coords, energy_log
-
-    # print(
-    #     f"  DELTA E: {energy_log[-1] - energy_log[0]}; E_before: {energy_log[0]}; E_after: {energy_log[-1]}"
-    # )
