@@ -66,7 +66,7 @@ def preprocess_mesh(file, ifResample, n_vertices):
     
     return coords, original_coords
 
-def relax_bending(coords, Kb, Ksg, Ksl, dt_, n_iter):
+def relax_bending(coords, Kb, Ksg, Ksl, dt, n_iter):
     # Instantiate material properties
     parameters = {
         "Kb": Kb / 4, 
@@ -78,41 +78,36 @@ def relax_bending(coords, Kb, Ksg, Ksl, dt_, n_iter):
     relaxed_coords = coords
     if n_iter > 0:
         relaxed_coords, energy_log = fwd_euler_integrator(
-            relaxed_coords, mem, n_steps=n_iter, dt=get_dimensional_time_step(dt_, mem.Kb, relaxed_coords)
+            relaxed_coords, mem, n_steps=n_iter, dt=dt
         )
         print(
             f"  DELTA E: {energy_log[-1] - energy_log[0]}; E_before: {energy_log[0]}; E_after: {energy_log[-1]}"
         )
     return relaxed_coords   
 
-def get_dimensional_time_step(dt_, Kb, coords):
-    # curvature_scale = np.max(ClosedPlaneCurveGeometry.edge_curvature(coords))
-    # return dt_/(4 * Kb * curvature_scale**2) 
-    return dt_
-
 def run(file, n_vertices):
     coords, original_coords = preprocess_mesh(file, ifResample=True, n_vertices=n_vertices)
     relaxed_coords = coords
     relaxed_coords, _ = resample(relaxed_coords, n_vertices=n_vertices)
     if file.stem == "34D-grid2-s2_002_16":
-        dt_ = 5e-6
+        dt = 5e-6
         n_iter = int(1e5)
-        relaxed_coords = relax_bending(coords, Kb=1, Ksg=1, Ksl = 0.1, dt_=dt_, n_iter=n_iter)
+        relaxed_coords = relax_bending(coords, Kb=1, Ksg=1, Ksl = 0.1, dt=dt, n_iter=n_iter)
     elif file.stem == "34D-grid2-s3_028_16":
-        dt_ = 1e-6
+        dt = 1e-6
         n_iter = int(1e5)
-        relaxed_coords = relax_bending(coords, Kb=1, Ksg=1, Ksl = 1, dt_=dt_, n_iter=n_iter)
+        relaxed_coords = relax_bending(coords, Kb=1, Ksg=1, Ksl = 1, dt=dt, n_iter=n_iter)
     elif file.stem == "34D-grid2-s5_005_16":
-        dt_ = 3e-7
+        dt = 3e-7
         n_iter = int(1e5)
-        relaxed_coords = relax_bending(coords, Kb=1, Ksg=20, Ksl = 1, dt_=dt_, n_iter=n_iter)
-        dt_ = 7e-8
+        relaxed_coords = relax_bending(coords, Kb=1, Ksg=20, Ksl = 1, dt=dt, n_iter=n_iter)
+        dt = 7e-8
         n_iter = int(5e4)
-        relaxed_coords = relax_bending(relaxed_coords, Kb=1, Ksg=1, Ksl = 0.1, dt_=dt_, n_iter=n_iter)
+        relaxed_coords = relax_bending(relaxed_coords, Kb=1, Ksg=1, Ksl = 0.1, dt=dt, n_iter=n_iter)
     else: 
-        dt_ = 1e-5
+        dt = 1e-5
         n_iter = int(1e5)
-        relaxed_coords = relax_bending(coords, Kb=1, Ksg=1, Ksl = 0.1, dt_=dt_, n_iter=n_iter)
+        relaxed_coords = relax_bending(coords, Kb=1, Ksg=1, Ksl = 0.1, dt=dt, n_iter=n_iter)
     if file.stem ==  "34D-grid3-ActA1_007_16":
         relaxed_coords = np.flip(relaxed_coords, axis=0)
         original_coords = np.flip(original_coords, axis=0)

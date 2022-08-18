@@ -71,13 +71,6 @@ def plot_force(
             zorder=0,
             cmap=plt.cm.Greys_r,
         )
-    (original_line,) = ax.plot(original_coords[:, 0], original_coords[:, 1], '-o', linewidth=0.1, color="k")
-    (line,) = ax.plot(
-        relaxed_coords[:, 0], relaxed_coords[:, 1], 'o', linewidth=0.2, color="r"
-    )
-    # (line,) = ax.plot(
-    #     relaxed_coords[:, 0], relaxed_coords[:, 1], linewidth=1.5, color="r"
-    # )
     
     # color-coded force
     # max_norm = np.max(np.linalg.norm(relaxed_force, axis=1))
@@ -92,7 +85,7 @@ def plot_force(
     norm = plt.Normalize(-abs(signed_f_mag).max(), abs(signed_f_mag).max())
     lc = LineCollection(segments, cmap='seismic', norm=norm)
     lc.set_array(signed_f_mag)
-    lc.set_linewidth(2)
+    lc.set_linewidth(4)
     line = ax.add_collection(lc)
     cbar = fig.colorbar(line, ax=ax)
     curvature_scale = np.max(ClosedPlaneCurveGeometry.edge_curvature(relaxed_coords))
@@ -100,12 +93,14 @@ def plot_force(
     # cbar.ax.set_ylabel("Force Density"+f"({round_sig(max_norm * curvature_scale**(-3), 3)}$\kappa$",  rotation=270)
     
     # # quiver plot
-    # f_mag = np.linalg.norm(relaxed_forces, axis=1)
+    # max_norm = np.max(np.linalg.norm(relaxed_force, axis=1))
+    # normalized_relaxed_force = relaxed_force / max_norm
+    # f_mag = np.linalg.norm(normalized_relaxed_force, axis=1)
     # q = ax.quiver(
     #     relaxed_coords[:, 0],
     #     relaxed_coords[:, 1],
-    #     relaxed_forces[:, 0],
-    #     relaxed_forces[:, 1],
+    #     normalized_relaxed_force[:, 0],
+    #     normalized_relaxed_force[:, 1],
     #     f_mag,
     #     cmap=mpl.cm.viridis_r,
     #     angles="xy",
@@ -125,6 +120,14 @@ def plot_force(
     # # ax.legend(loc="center left", bbox_to_anchor=(1, 0.5))
     # # cbar.ax.set_ylabel("Force Density ($\mathregular{pN/\mu m^2}$)", rotation=270)
     
+    (original_line,) = ax.plot(original_coords[:, 0], original_coords[:, 1], '-o', markersize = 0.2, linewidth=0.1, color="k")
+    # (line,) = ax.plot(
+    #     relaxed_coords[:, 0], relaxed_coords[:, 1], 'o', linewidth=0.2, color="r"
+    # )
+    # (line,) = ax.plot(
+    #     relaxed_coords[:, 0], relaxed_coords[:, 1], linewidth=1.5, color="r"
+    # )
+
     ax.set_ylabel(r"X (μm)")
     ax.set_xlabel(r"Y (μm)")
 
@@ -145,10 +148,10 @@ def run(file):
     
     fig = plt.figure(figsize=(5, 5))
 
-    moviewriter = animation.FFMpegWriter(fps=1)
-    with moviewriter.saving(fig, f"figures/{file.stem}.mp4", dpi=100):
+    moviewriter = animation.FFMpegWriter(fps=10)
+    with moviewriter.saving(fig, f"figures/{file.stem}.mp4", dpi=200):
         for Ksg_count, Ksg_ in tqdm(enumerate(_Ksg_), desc="Rendering plots"):
-            forces = Ksg_force[Ksg_count][1:]
+            forces = Ksg_force[Ksg_count]
             total_force = np.sum(forces, axis=0)
             bending_force = forces[0]
             surface_force = forces[1]
@@ -196,4 +199,4 @@ def run(file):
 if __name__ == "__main__":
     ## BATCH RENDER
     from actuator_constants import files
-    r = process_map(run, files, max_workers=6)
+    r = process_map(run, files, max_workers=12)

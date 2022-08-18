@@ -68,7 +68,7 @@ def run(file, _Ksg_):
 if __name__ == "__main__":
     ## BATCH RENDER
     from actuator_constants import files
-    f_run = partial(run, _Ksg_ = np.linspace(0,0.2,1+2**1))
+    f_run = partial(run, _Ksg_ = np.linspace(0,1,1+2**6))
     r = process_map(f_run, files, max_workers=12)
         
         
