@@ -99,8 +99,8 @@ def run(file, n_vertices):
         n_iter = int(1e5)
         relaxed_coords = relax_bending(coords, Kb=1, Ksg=1, Ksl = 0.1, dt_=dt_, n_iter=n_iter)
     elif file.stem == "34D-grid2-s3_028_16":
-        dt_ = 1e-8
-        n_iter = int(2e5)
+        dt_ = 1e-6
+        n_iter = int(1e5)
         relaxed_coords = relax_bending(coords, Kb=1, Ksg=1, Ksl = 1, dt_=dt_, n_iter=n_iter)
     elif file.stem == "34D-grid2-s5_005_16":
         dt_ = 3e-7
