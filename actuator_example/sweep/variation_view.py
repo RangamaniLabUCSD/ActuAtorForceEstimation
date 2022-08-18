@@ -33,8 +33,8 @@ ph.matplotlibStyle(small=10, medium=12, large=14)
 # Plotting settings
 padding = 2
 cm = mpl.cm.viridis_r
-def round_sig(x, sig=2):
-    return round(x, sig-int(math.floor(math.log10(abs(x))))-1)
+# def round_sig(x, sig=2):
+#     return round(x, sig-int(math.floor(math.log10(abs(x))))-1)
 
 def plot_force(
     fig,
@@ -83,24 +83,24 @@ def plot_force(
     #     relaxed_coords[:, 0], relaxed_coords[:, 1], linewidth=1.5, color="r"
     # )
     
-    # # color-coded force
-    # # max_norm = np.max(np.linalg.norm(relaxed_force, axis=1))
-    # # normalized_relaxed_force = relaxed_force / max_norm
+    # color-coded force
     # max_norm = np.max(np.linalg.norm(relaxed_force, axis=1))
     # normalized_relaxed_force = relaxed_force / max_norm
-    # vertex_normal = ClosedPlaneCurveGeometry.vertex_normal(relaxed_coords)
-    # signed_f_mag = np.sum(normalized_relaxed_force * vertex_normal, axis = 1)
-    # points = relaxed_coords.reshape(-1, 1, 2)
-    # segments = np.concatenate([points[:-1], points[1:]], axis=1)
-    # from matplotlib.collections import LineCollection
-    # norm = plt.Normalize(-abs(signed_f_mag).max(), abs(signed_f_mag).max())
-    # lc = LineCollection(segments, cmap='seismic', norm=norm)
-    # lc.set_array(signed_f_mag)
-    # lc.set_linewidth(2)
-    # line = ax.add_collection(lc)
-    # cbar = fig.colorbar(line, ax=ax)
-    # curvature_scale = np.max(ClosedPlaneCurveGeometry.edge_curvature(relaxed_coords))
-    # cbar.ax.get_yaxis().labelpad = 20
+    max_norm = np.max(np.linalg.norm(relaxed_force, axis=1))
+    normalized_relaxed_force = relaxed_force / max_norm
+    vertex_normal = ClosedPlaneCurveGeometry.vertex_normal(relaxed_coords)
+    signed_f_mag = np.sum(normalized_relaxed_force * vertex_normal, axis = 1)
+    points = relaxed_coords.reshape(-1, 1, 2)
+    segments = np.concatenate([points[:-1], points[1:]], axis=1)
+    from matplotlib.collections import LineCollection
+    norm = plt.Normalize(-abs(signed_f_mag).max(), abs(signed_f_mag).max())
+    lc = LineCollection(segments, cmap='seismic', norm=norm)
+    lc.set_array(signed_f_mag)
+    lc.set_linewidth(2)
+    line = ax.add_collection(lc)
+    cbar = fig.colorbar(line, ax=ax)
+    curvature_scale = np.max(ClosedPlaneCurveGeometry.edge_curvature(relaxed_coords))
+    cbar.ax.get_yaxis().labelpad = 20
     # cbar.ax.set_ylabel("Force Density"+f"({round_sig(max_norm * curvature_scale**(-3), 3)}$\kappa$",  rotation=270)
     
     # # quiver plot
@@ -139,18 +139,20 @@ def plot_force(
     
 
 def run(file):
-    data = np.load(f"data/{file.stem}.npz")
+    data = np.load(f"forces/{file.stem}.npz")
     _Ksg_ = data["_Ksg_"]
+    Ksg_force = data["Ksg_force"]
+
+    data = np.load(f"relaxed_coords/{file.stem}.npz")
+    relaxed_coords = data["relaxed_coords"]
     original_coords = data["original_coords"]
-    Ksg_coords_force = data["Ksg_coords_force"]
     
     fig = plt.figure(figsize=(5, 5))
 
     moviewriter = animation.FFMpegWriter(fps=1)
     with moviewriter.saving(fig, f"figures/{file.stem}.mp4", dpi=200):
         for Ksg_count, Ksg_ in tqdm(enumerate(_Ksg_), desc="Rendering plots"):
-            coord = Ksg_coords_force[Ksg_count][0]
-            forces = Ksg_coords_force[Ksg_count][1:]
+            forces = Ksg_force[Ksg_count][1:]
             total_force = np.sum(forces, axis=0)
             bending_force = forces[0]
             surface_force = forces[1]
@@ -167,7 +169,7 @@ def run(file):
                 fig,
                 file.stem,
                 original_coords,
-                coord,
+                relaxed_coords,
                 total_force,
                 fps=30,
                 dpi=200,
@@ -191,8 +193,8 @@ def run(file):
             #     dpi=200,
             #     skip=100,
             # )
-            plt.title("$\\bar{\sigma}=$" + f"{Ksg_}" + 
-                    "$, \sigma=$" + f"{math.floor(get_dimensional_tension(Ksg_=Ksg_, Kb=1, coords = coord))}$\kappa$")
+            # plt.title("$\\bar{\sigma}=$" + f"{Ksg_}" + 
+            #         "$, \sigma=$" + f"{math.floor(get_dimensional_tension(Ksg_=Ksg_, Kb=1, coords = relaxed_coords))}$\kappa$")
             plt.savefig("figures/" + file.stem + f"_Ksg{math.floor(Ksg_*1000)}" + ".png")
             moviewriter.grab_frame()
             fig.clear()

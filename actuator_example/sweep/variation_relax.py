@@ -70,8 +70,8 @@ def relax_bending(coords, Kb, dt_, n_iter):
     # Instantiate material properties
     parameters = {
         "Kb": Kb / 4, 
-        "Ksg": 10 * Kb,
-        "Ksl": 20 * Kb,
+        "Ksg": 1 * Kb,
+        "Ksl": 0.1 * Kb,
     }
     mem = ClosedPlaneCurveMaterial(**parameters)
     # Perform energy relaxation
@@ -85,18 +85,37 @@ def relax_bending(coords, Kb, dt_, n_iter):
         )
     return relaxed_coords   
 
+def get_dimensional_time_step(dt_, Kb, coords):
+    # curvature_scale = np.max(ClosedPlaneCurveGeometry.edge_curvature(coords))
+    # return dt_/(4 * Kb * curvature_scale**2) 
+    return dt_
 
-def run(file, n_vertices, _Ksg_):
+def run(file, n_vertices):
     coords, original_coords = preprocess_mesh(file, ifResample=True, n_vertices=n_vertices)
     relaxed_coords = coords
-    relaxed_coords = relax_bending(coords, Kb=0.1, dt_=2e-6, n_iter=int(1e6))
+    if file.stem == "34D-grid2-s2_002_16":
+        dt_ = 5e-7
+        n_iter = int(1e6)
+    if file.stem == "34D-grid2-s3_028_16":
+        dt_ = 1e-10
+        n_iter = int(1e5)
+    if file.stem == "34D-grid2-s5_005_16":
+        dt_ = 1e-9
+        n_iter = int(1e7)
+    else: 
+        dt_ = 1e-5
+        n_iter = int(1e5)
+    relaxed_coords = relax_bending(coords, Kb=1, dt_=dt_, n_iter=n_iter)
     # relaxed_coords, _ = resample(relaxed_coords, n_vertices=n_vertices)
+    if file.stem ==  "34D-grid3-ActA1_007_16":
+        relaxed_coords = np.flip(relaxed_coords, axis=0)
+        original_coords = np.flip(original_coords, axis=0)
     np.savez(f"relaxed_coords/{file.stem}", relaxed_coords = relaxed_coords, original_coords = original_coords)
 
 
 if __name__ == "__main__":
     ## BATCH RENDER
     from actuator_constants import files
-    f_run = partial(run, n_vertices=500, _Ksg_ = np.linspace(0,0.2,1+2**1))
+    f_run = partial(run, n_vertices=1000)
     r = process_map(f_run, files, max_workers=12)
         
