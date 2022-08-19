@@ -30,6 +30,7 @@ ph.matplotlibStyle(small=10, medium=12, large=14)
 padding = 2
 cm = mpl.cm.viridis_r
 
+
 def plot_force(
     fig,
     file_stem,
@@ -148,7 +149,7 @@ def plot_force(
     ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
 
 
-def run(file):
+def run_plot(file):
     data = np.load(f"forces/{file.stem}.npz")
     _Ksg_ = data["_Ksg_"]
     Ksg_force = data["Ksg_force"]
@@ -172,7 +173,7 @@ def run(file):
                 total_force,
                 _Ksg_,
                 Ksg_,
-                style="quiver",
+                style="color",
             )
             # plt.title("$\\bar{\sigma}=$" + f"{Ksg_}" +
             #         "$, \sigma=$" + f"{math.floor(get_dimensional_tension(Ksg_=Ksg_, Kb=1, coords = relaxed_coords))}$\kappa$")
@@ -184,7 +185,4 @@ def run(file):
 
 
 if __name__ == "__main__":
-    ## BATCH RENDER
-    from actuator_constants import files
-
-    r = process_map(run, files, max_workers=12)
+    r = process_map(run_plot, files, max_workers=12)

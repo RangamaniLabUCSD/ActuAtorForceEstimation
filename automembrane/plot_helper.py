@@ -25,7 +25,7 @@ import matplotlib.patches as mpatches
 
 import seaborn as sns
 
-print("Matplotlib Version:", mpl.__version__)
+# print("Matplotlib Version:", mpl.__version__)
 
 plt.style.use("seaborn-colorblind")  # set plot style
 mpl.rcParams["font.sans-serif"] = "Arial"
