@@ -22,16 +22,22 @@ from actuator_constants import files
 jax.config.update("jax_enable_x64", True)
 ph.matplotlibStyle(small=10, medium=12, large=14)
 
+
 def get_dimensional_tension(Ksg_, Kb, coords):
     curvature_scale = np.max(abs(ClosedPlaneCurveGeometry.edge_curvature(coords)))
     return 4 * Kb * curvature_scale**2 * Ksg_
 
+
 def get_force_density(parameters, coords):
     mem = ClosedPlaneCurveMaterial(**parameters)
-    forces = np.array([force/ClosedPlaneCurveGeometry.vertex_dual_length(
-        coords
-    ) for force in mem.force(coords)])
+    forces = np.array(
+        [
+            force / ClosedPlaneCurveGeometry.vertex_dual_length(coords)
+            for force in mem.force(coords)
+        ]
+    )
     return forces       
+
 
 def run_parameter_variation(file, _Ksg_):
     Ksg_force = []
@@ -52,8 +58,8 @@ def run_parameter_variation(file, _Ksg_):
     Ksg_force = np.asarray(Ksg_force)
     np.savez(f"forces/{file.stem}", _Ksg_=_Ksg_, Ksg_force=Ksg_force)
 
+
 if __name__ == "__main__":
-    f_run = partial(run_parameter_variation, _Ksg_ = np.linspace(0,2,1+2**6))
+    f_run = partial(run_parameter_variation, _Ksg_=np.linspace(0, 2, 1 + 2**6))
     r = process_map(f_run, files, max_workers=12)
-        
         

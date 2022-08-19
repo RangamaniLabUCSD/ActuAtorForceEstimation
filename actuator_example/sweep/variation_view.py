@@ -81,6 +81,13 @@ def plot_force(
             cmap=plt.cm.Greys_r,
         )
 
+    ax.set_ylabel(r"X (μm)")
+    ax.set_xlabel(r"Y (μm)")
+
+    # Shrink current axis
+    box = ax.get_position()
+    ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
+
     # color-coded force
     if style == "color":
         vertex_normal = ClosedPlaneCurveGeometry.vertex_normal(relaxed_coords)
@@ -140,13 +147,6 @@ def plot_force(
     # (line,) = ax.plot(
     #     relaxed_coords[:, 0], relaxed_coords[:, 1], 'o', linewidth=0.2, color="r"
     # )
-
-    ax.set_ylabel(r"X (μm)")
-    ax.set_xlabel(r"Y (μm)")
-
-    # Shrink current axis
-    box = ax.get_position()
-    ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
 
 
 def run_plot(file):
