@@ -116,7 +116,7 @@ def plot_contour(
     ax.set_ylabel(r"Y (μm)")
     ax.set_xlabel(r"X (μm)")
 
-    ax.legend(loc="center left")  # , bbox_to_anchor=(1, 0.5))
+    ax.legend(loc="upper left")  # , bbox_to_anchor=(1, 0.5))
 
     # # Shrink current axis
     # box = ax.get_position()
@@ -183,7 +183,7 @@ params = {
         "Ksl": 1,
     },
     "34D-grid2-s5_005_16": {
-        "dt": 7e-8,
+        "dt": 3e-7,
         "n_iter": int(5e4),
         "Kb": 1,
         "Ksg": 1,
@@ -204,14 +204,17 @@ def run_relaxation(file: Path, n_vertices: int = 1000):
         file, resample_geometry=True, n_vertices=n_vertices
     )
 
+    if file.stem == "34D-grid2-s5_005_16":
+        coords = relax_bending(coords, dt=3e-7, n_iter=int(1e5), Kb=1, Ksg=20, Ksl=1)
+
     if file.stem in params:
         relaxed_coords = relax_bending(coords, **params[file.stem])
     else:
         relaxed_coords = relax_bending(coords, **params["other"])
 
-    # if file.stem == "34D-grid3-ActA1_007_16":
-    #     relaxed_coords = np.flip(relaxed_coords, axis=0)
-    #     original_coords = np.flip(original_coords, axis=0)
+    if file.stem == "34D-grid3-ActA1_007_16":
+        relaxed_coords = np.flip(relaxed_coords, axis=0)
+        original_coords = np.flip(original_coords, axis=0)
 
     np.savez(
         f"relaxed_coords/{file.stem}",
@@ -256,6 +259,9 @@ def generate_relaxation_movie(file: Path, n_vertices: int = 1000):
             save_trajectory=True,
         )
         return c, e, f
+
+    if file.stem == "34D-grid2-s5_005_16":
+        coords = relax_bending(coords, dt=3e-7, n_iter=int(1e5), Kb=1, Ksg=20, Ksl=1)
 
     if file.stem in params:
         c, e, f = get_trajectory(coords, **params[file.stem])
