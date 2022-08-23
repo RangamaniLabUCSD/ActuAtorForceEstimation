@@ -189,6 +189,13 @@ params = {
         "Ksg": 1,
         "Ksl": 0.1,
     },
+    "34D-grid2-s3-acta1_001_16": {
+        "dt": 1e-5,
+        "n_iter": int(8e2),
+        "Kb": 1,
+        "Ksg": 1,
+        "Ksl": 0.1,
+    },
     "other": {
         "dt": 1e-5,
         "n_iter": int(1e5),

@@ -60,6 +60,6 @@ def run_parameter_variation(file, _Ksg_):
 
 
 if __name__ == "__main__":
-    f_run = partial(run_parameter_variation, _Ksg_=np.linspace(0, 2, 1 + 2**6))
+    f_run = partial(run_parameter_variation, _Ksg_=np.linspace(0, 0.3, 1 + 2**5))
     r = process_map(f_run, files, max_workers=12)
         

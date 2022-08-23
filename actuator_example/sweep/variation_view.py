@@ -31,6 +31,16 @@ padding = 2
 cm = mpl.cm.viridis_r
 
 
+def zoom(unzoomed_xlim, unzoomed_ylim, magnification, center):
+    width = abs(unzoomed_xlim[1] - unzoomed_xlim[0]) / magnification
+    height = abs(unzoomed_ylim[1] - unzoomed_ylim[0]) / magnification
+    zoomed_xlim = np.array([center[0] - width / 2, center[0] + width / 2])
+    zoomed_ylim = np.array([center[1] - height / 2, center[1] + height / 2])
+    np.clip(zoomed_xlim, unzoomed_xlim[0], unzoomed_xlim[1], out=zoomed_xlim)
+    np.clip(zoomed_ylim, unzoomed_ylim[0], unzoomed_ylim[1], out=zoomed_ylim)
+    return zoomed_xlim, zoomed_ylim
+
+
 def plot_force(
     fig,
     file_stem,
@@ -39,7 +49,7 @@ def plot_force(
     relaxed_force,
     _Ksg_,
     Ksg_,
-    style="color",
+    style="quiver",
 ):
     spec = fig.add_gridspec(ncols=1, nrows=2, height_ratios=[1, 40])
 
@@ -49,7 +59,7 @@ def plot_force(
     )
     # ax = fig.add_subplot(autoscale_on=False, xlim=x_lim, ylim=y_lim)
     ax.vlines(Ksg_, 0, 1, linestyles="solid", colors="r", linewidth=6)
-    ax.set_xticks([np.min(_Ksg_), 1, np.max(_Ksg_)])
+    ax.set_xticks([np.min(_Ksg_), (np.min(_Ksg_) + np.max(_Ksg_)) / 2, np.max(_Ksg_)])
     ax.set_xticklabels(["Bending", "Transition", "Tension"])
     ax.get_yaxis().set_visible(False)
     ax.xaxis.tick_top()
@@ -63,6 +73,24 @@ def plot_force(
         -padding,
         padding,
     ]
+    # max_curv_index = np.argmax(ClosedPlaneCurveGeometry.edge_curvature(relaxed_coords))
+    # center = (relaxed_coords[max_curv_index] + relaxed_coords[max_curv_index + 1]) / 2
+    # max_force_index = np.argmax(np.linalg.norm(relaxed_force, axis=1))
+    # center = relaxed_coords[max_force_index]
+    # center = np.mean(
+    #     relaxed_coords[max_force_index - 50 : max_force_index + 50], axis=0
+    # )
+    # x_lim, y_lim = zoom(
+    #     unzoomed_xlim=x_lim,
+    #     unzoomed_ylim=y_lim,
+    #     magnification=4,
+    #     center=center,
+    # )
+    
+    if (file_stem == "34D-grid2-s3-acta1_001_16"):
+        x_lim = np.array([18, 21])
+        y_lim = np.array([12, 16])
+        
     ax = fig.add_subplot(spec[1], autoscale_on=False, xlim=x_lim, ylim=y_lim)
     # flip y-axis
     ax.set_ylim(ax.get_ylim()[::-1])
@@ -81,8 +109,8 @@ def plot_force(
             cmap=plt.cm.Greys_r,
         )
 
-    ax.set_ylabel(r"X (μm)")
-    ax.set_xlabel(r"Y (μm)")
+    ax.set_ylabel(r"Y (μm)")
+    ax.set_xlabel(r"X (μm)")
 
     # Shrink current axis
     box = ax.get_position()
@@ -114,8 +142,8 @@ def plot_force(
         q = ax.quiver(
             relaxed_coords[:, 0],
             relaxed_coords[:, 1],
-            normalized_relaxed_force[:, 0],
-            normalized_relaxed_force[:, 1],
+            -normalized_relaxed_force[:, 0],
+            -normalized_relaxed_force[:, 1],
             f_mag,
             cmap=mpl.cm.viridis_r,
             angles="xy",
@@ -123,7 +151,7 @@ def plot_force(
             label="force",
             scale=8e-1,
             scale_units="xy",
-            width=0.1,
+            width=0.02,
             zorder=10,
         )
         cbar = fig.colorbar(
@@ -134,6 +162,9 @@ def plot_force(
         cbar.ax.set_ylabel("Force Density", rotation=270)
         # ax.legend(loc="center left", bbox_to_anchor=(1, 0.5))
         # cbar.ax.set_ylabel("Force Density ($\mathregular{pN/\mu m^2}$)", rotation=270)
+        (line,) = ax.plot(
+            relaxed_coords[:, 0], relaxed_coords[:, 1], linewidth=0.2, color="r"
+        )
 
     # outline plots
     (original_line,) = ax.plot(
@@ -144,12 +175,9 @@ def plot_force(
         linewidth=0.1,
         color="k",
     )
-    # (line,) = ax.plot(
-    #     relaxed_coords[:, 0], relaxed_coords[:, 1], 'o', linewidth=0.2, color="r"
-    # )
 
 
-def run_plot(file):
+def run_plot(file, write_movie=True):
     data = np.load(f"forces/{file.stem}.npz")
     _Ksg_ = data["_Ksg_"]
     Ksg_force = data["Ksg_force"]
@@ -160,8 +188,30 @@ def run_plot(file):
 
     fig = plt.figure(figsize=(5, 5))
 
-    moviewriter = animation.FFMpegWriter(fps=10)
-    with moviewriter.saving(fig, f"videos/{file.stem}.mp4", dpi=200):
+    if write_movie:
+        moviewriter = animation.FFMpegWriter(fps=10)
+        with moviewriter.saving(fig, f"videos/{file.stem}.mp4", dpi=200):
+            for Ksg_count, Ksg_ in tqdm(enumerate(_Ksg_), desc="Rendering plots"):
+                forces = Ksg_force[Ksg_count]
+                total_force = np.sum(forces, axis=0)
+                plot_force(
+                    fig,
+                    file.stem,
+                    original_coords,
+                    relaxed_coords,
+                    total_force,
+                    _Ksg_,
+                    Ksg_,
+                    style="quiver",
+                )
+                # plt.title("$\\bar{\sigma}=$" + f"{Ksg_}" +
+                #         "$, \sigma=$" + f"{math.floor(get_dimensional_tension(Ksg_=Ksg_, Kb=1, coords = relaxed_coords))}$\kappa$")
+                plt.savefig(
+                    "figures/" + file.stem + f"_Ksg{math.floor(Ksg_*1000)}" + ".png"
+                )
+                moviewriter.grab_frame()
+                fig.clear()
+    else:
         for Ksg_count, Ksg_ in tqdm(enumerate(_Ksg_), desc="Rendering plots"):
             forces = Ksg_force[Ksg_count]
             total_force = np.sum(forces, axis=0)
@@ -180,7 +230,6 @@ def run_plot(file):
             plt.savefig(
                 "figures/" + file.stem + f"_Ksg{math.floor(Ksg_*1000)}" + ".png"
             )
-            moviewriter.grab_frame()
             fig.clear()
 
 
