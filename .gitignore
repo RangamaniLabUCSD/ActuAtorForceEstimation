@@ -171,3 +171,4 @@ movies/
 *.npz
 *.pyg
 *.mp4
+*.png
