@@ -6,27 +6,26 @@
 
 from functools import partial
 from pathlib import Path
-from re import A
 from typing import Union
 
+import automembrane.plot_helper as ph
 import jax
+import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing as npt
-import matplotlib.pyplot as plt
-from PIL import Image
 from automembrane.energy import ClosedPlaneCurveMaterial
 from automembrane.integrator import fwd_euler_integrator
+from PIL import Image
 from scipy.interpolate import splev, splprep
 from tqdm.contrib.concurrent import process_map
 
-from actuator_constants import files, images
 
-import automembrane.plot_helper as ph
+from actuator_constants import image_microns_per_pixel, raw_image_paths, files
+
+from make_movie import make_movie
 
 jax.config.update("jax_enable_x64", True)
 ph.matplotlibStyle(small=10, medium=12, large=14)
-
-from make_movie import make_movie
 
 
 def resample(
@@ -59,9 +58,9 @@ def resample(
 
 def plot_contour(
     fig,
-    file_stem,
-    original_coords,
-    relaxed_coords,
+    file_stem: str,
+    original_coords: npt.NDArray[np.float64],
+    relaxed_coords: npt.NDArray[np.float64],
 ):
     padding = 3
     x_lim = np.array([np.min(relaxed_coords[:, 0]), np.max(relaxed_coords[:, 0])]) + [
@@ -76,17 +75,21 @@ def plot_contour(
 
     # flip y-axis
     ax.set_ylim(ax.get_ylim()[::-1])
+    ax.set_ylabel(r"Y (μm)")
+    ax.set_xlabel(r"X (μm)")
 
     # nucleus cell trace
-    with Image.open(f"../raw_images/{file_stem}.TIF") as im:
-        pixel_scale = images[file_stem]
+    with Image.open(raw_image_paths[file_stem]) as im:
+        pixel_scale = image_microns_per_pixel[file_stem]
         x_lim_pix = (x_lim / pixel_scale).round()
         y_lim_pix = (y_lim / pixel_scale).round()
 
-        im = im.crop((x_lim_pix[0], y_lim_pix[0], x_lim_pix[1], y_lim_pix[1]))
+        cropped_image = im.crop(
+            (x_lim_pix[0], y_lim_pix[0], x_lim_pix[1], y_lim_pix[1])
+        )
 
-        plt.imshow(
-            im,
+        im = ax.imshow(
+            cropped_image,
             alpha=0.6,
             extent=(x_lim[0], x_lim[1], y_lim[1], y_lim[0]),
             zorder=0,
@@ -109,18 +112,9 @@ def plot_contour(
         color="r",
         label="Relaxed",
     )
-    # (line,) = ax.plot(
-    #     relaxed_coords[:, 0], relaxed_coords[:, 1], linewidth=1.5, color="r"
-    # )
 
-    ax.set_ylabel(r"Y (μm)")
-    ax.set_xlabel(r"X (μm)")
-
-    ax.legend(loc="upper left")  # , bbox_to_anchor=(1, 0.5))
-
-    # # Shrink current axis
-    # box = ax.get_position()
-    # ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
+    ax.legend(loc="upper right", frameon=True, framealpha=0.5)
+    return fig, (original_line, line, im)
 
 
 def preprocess_mesh(
@@ -167,42 +161,59 @@ def relax_bending(coords, Kb, Ksg, Ksl, dt, n_iter):
     return coords
 
 
-params = {
-    "34D-grid2-s2_002_16": {
-        "dt": 5e-6,
-        "n_iter": int(1e5),
-        "Kb": 1,
-        "Ksg": 1,
-        "Ksl": 0.1,
-    },
-    "34D-grid2-s3_028_16": {
-        "dt": 1e-6,
-        "n_iter": int(1e5),
-        "Kb": 1,
-        "Ksg": 1,
-        "Ksl": 1,
-    },
-    "34D-grid2-s5_005_16": {
-        "dt": 3e-7,
-        "n_iter": int(5e4),
-        "Kb": 1,
-        "Ksg": 1,
-        "Ksl": 0.1,
-    },
-    "34D-grid2-s3-acta1_001_16": {
-        "dt": 1e-5,
-        "n_iter": int(8e2),
-        "Kb": 1,
-        "Ksg": 1,
-        "Ksl": 0.1,
-    },
-    "other": {
-        "dt": 1e-5,
-        "n_iter": int(1e5),
-        "Kb": 1,
-        "Ksg": 1,
-        "Ksl": 0.1,
-    },
+relaxation_parameters = {
+    "34D-grid2-s2_002_16": [
+        {
+            "dt": 5e-6,
+            "n_iter": int(1e5),
+            "Kb": 1,
+            "Ksg": 1,
+            "Ksl": 0.1,
+        }
+    ],
+    "34D-grid2-s3_028_16": [
+        {
+            "dt": 1e-6,
+            "n_iter": int(1e5),
+            "Kb": 1,
+            "Ksg": 1,
+            "Ksl": 1,
+        }
+    ],
+    "34D-grid2-s5_005_16": [
+        {
+            "dt": 3e-7,
+            "n_iter": int(1e5),
+            "Kb": 1,
+            "Ksg": 20,
+            "Ksl": 1,
+        },
+        {
+            "dt": 3e-7,
+            "n_iter": int(5e4),
+            "Kb": 1,
+            "Ksg": 1,
+            "Ksl": 0.1,
+        },
+    ],
+    "34D-grid2-s3-acta1_001_16": [
+        {
+            "dt": 1e-5,
+            "n_iter": int(8e2),
+            "Kb": 1,
+            "Ksg": 1,
+            "Ksl": 0.1,
+        }
+    ],
+    "other": [
+        {
+            "dt": 1e-5,
+            "n_iter": int(1e5),
+            "Kb": 1,
+            "Ksg": 1,
+            "Ksl": 0.1,
+        }
+    ],
 }
 
 
@@ -211,13 +222,12 @@ def run_relaxation(file: Path, n_vertices: int = 1000):
         file, resample_geometry=True, n_vertices=n_vertices
     )
 
-    if file.stem == "34D-grid2-s5_005_16":
-        coords = relax_bending(coords, dt=3e-7, n_iter=int(1e5), Kb=1, Ksg=20, Ksl=1)
-
-    if file.stem in params:
-        relaxed_coords = relax_bending(coords, **params[file.stem])
+    if file.stem in relaxation_parameters:
+        for params in relaxation_parameters[file.stem]:
+            relaxed_coords = relax_bending(coords, **params)
     else:
-        relaxed_coords = relax_bending(coords, **params["other"])
+        for params in relaxation_parameters["other"]:
+            relaxed_coords = relax_bending(coords, **params)
 
     if file.stem == "34D-grid3-ActA1_007_16":
         relaxed_coords = np.flip(relaxed_coords, axis=0)
@@ -270,10 +280,10 @@ def generate_relaxation_movie(file: Path, n_vertices: int = 1000):
     if file.stem == "34D-grid2-s5_005_16":
         coords = relax_bending(coords, dt=3e-7, n_iter=int(1e5), Kb=1, Ksg=20, Ksl=1)
 
-    if file.stem in params:
-        c, e, f = get_trajectory(coords, **params[file.stem])
+    if file.stem in relaxation_parameters:
+        c, e, f = get_trajectory(coords, **relaxation_parameters[file.stem])
     else:
-        c, e, f = get_trajectory(coords, **params["other"])
+        c, e, f = get_trajectory(coords, **relaxation_parameters["other"])
 
     # if file.stem == "34D-grid3-ActA1_007_16":
     #     relaxed_coords = np.flip(relaxed_coords, axis=0)

@@ -12,7 +12,7 @@ import numpy.typing as npt
 
 class ClosedPlaneCurveGeometry:
     @staticmethod
-    # @jax.jit
+    @jax.jit
     def edge_curvature(
         vertex_positions: npt.NDArray[np.float64],
     ) -> npt.NDArray[np.float64]:
@@ -39,7 +39,7 @@ class ClosedPlaneCurveGeometry:
         return edgeCurvatures
 
     @staticmethod
-    # @jax.jit
+    @jax.jit
     def vertex_dual_length(
         vertex_positions: npt.NDArray[np.float64],
     ) -> npt.NDArray[np.float64]:
@@ -50,15 +50,13 @@ class ClosedPlaneCurveGeometry:
         Returns:
             npt.NDArray[np.float64]: vertex dual length
         """
-        dc = np.roll(vertex_positions[:-1], -1, axis=0) - vertex_positions[:-1]
-        edgeLengths = np.linalg.norm(dc, axis=1)
-        dualLengths = ((edgeLengths + np.roll(edgeLengths, 1)) / 2.0).reshape(-1, 1)
-        dualLengths = np.vstack((dualLengths, dualLengths[0]))
-
-        return dualLengths
+        dc = jnp.roll(vertex_positions[:-1], -1, axis=0) - vertex_positions[:-1]
+        edgeLengths = jnp.linalg.norm(dc, axis=1)
+        dualLengths = ((edgeLengths + jnp.roll(edgeLengths, 1)) / 2.0).reshape(-1, 1)
+        return jnp.vstack((dualLengths, dualLengths[0]))
 
     @staticmethod
-    # @jax.jit
+    @jax.jit
     def edge_length(
         vertex_positions: npt.NDArray[np.float64],
     ) -> npt.NDArray[np.float64]:
@@ -69,12 +67,10 @@ class ClosedPlaneCurveGeometry:
         Returns:
             npt.NDArray[np.float64]: edge length
         """
-        dc = np.roll(vertex_positions[:-1], -1, axis=0) - vertex_positions[:-1]
-        edgeLengths = np.linalg.norm(dc, axis=1)
-        return edgeLengths
+        dc = jnp.roll(vertex_positions[:-1], -1, axis=0) - vertex_positions[:-1]
+        return jnp.linalg.norm(dc, axis=1)
 
     @staticmethod
-    # @jax.jit
     def vertex_normal(
         vertex_positions: npt.NDArray[np.float64],
         orientation: str = "cw",

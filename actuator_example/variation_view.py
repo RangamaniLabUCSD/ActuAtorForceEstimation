@@ -21,7 +21,7 @@ from tqdm.contrib.concurrent import process_map
 from automembrane.geometry import ClosedPlaneCurveGeometry
 import automembrane.plot_helper as ph
 
-from actuator_constants import files, images
+from actuator_constants import files, raw_image_paths, image_microns_per_pixel
 
 jax.config.update("jax_enable_x64", True)
 ph.matplotlibStyle(small=10, medium=12, large=14)
@@ -47,19 +47,28 @@ def plot_force(
     original_coords,
     relaxed_coords,
     relaxed_force,
-    _Ksg_,
-    Ksg_,
+    Ksg_range,
+    Ksg,
     style="quiver",
 ):
     spec = fig.add_gridspec(ncols=1, nrows=2, height_ratios=[1, 40])
 
     # bending-tension parameter bar
     ax = fig.add_subplot(
-        spec[0], autoscale_on=False, xlim=(np.min(_Ksg_), np.max(_Ksg_)), ylim=(0, 1)
+        spec[0],
+        autoscale_on=False,
+        xlim=(np.min(Ksg_range), np.max(Ksg_range)),
+        ylim=(0, 1),
     )
     # ax = fig.add_subplot(autoscale_on=False, xlim=x_lim, ylim=y_lim)
-    ax.vlines(Ksg_, 0, 1, linestyles="solid", colors="r", linewidth=6)
-    ax.set_xticks([np.min(_Ksg_), (np.min(_Ksg_) + np.max(_Ksg_)) / 2, np.max(_Ksg_)])
+    ax.vlines(Ksg, 0, 1, linestyles="solid", colors="r", linewidth=6)
+    ax.set_xticks(
+        [
+            np.min(Ksg_range),
+            (np.min(Ksg_range) + np.max(Ksg_range)) / 2,
+            np.max(Ksg_range),
+        ]
+    )
     ax.set_xticklabels(["Bending", "Transition", "Tension"])
     ax.get_yaxis().set_visible(False)
     ax.xaxis.tick_top()
@@ -86,16 +95,16 @@ def plot_force(
     #     magnification=4,
     #     center=center,
     # )
-    
-    if (file_stem == "34D-grid2-s3-acta1_001_16"):
+
+    if file_stem == "34D-grid2-s3-acta1_001_16":
         x_lim = np.array([18, 21])
         y_lim = np.array([12, 16])
-        
+
     ax = fig.add_subplot(spec[1], autoscale_on=False, xlim=x_lim, ylim=y_lim)
     # flip y-axis
     ax.set_ylim(ax.get_ylim()[::-1])
-    with Image.open(f"../raw_images/{file_stem}.TIF") as im:
-        pixel_scale = images[file_stem]
+    with Image.open(raw_image_paths[file_stem]) as im:
+        pixel_scale = image_microns_per_pixel[file_stem]
         x_lim_pix = (x_lim / pixel_scale).round()
         y_lim_pix = (y_lim / pixel_scale).round()
 
@@ -190,7 +199,7 @@ def run_plot(file, write_movie=True):
 
     if write_movie:
         moviewriter = animation.FFMpegWriter(fps=10)
-        with moviewriter.saving(fig, f"videos/{file.stem}.mp4", dpi=200):
+        with moviewriter.saving(fig, f"movies/{file.stem}.mp4", dpi=200):
             for Ksg_count, Ksg_ in tqdm(enumerate(_Ksg_), desc="Rendering plots"):
                 forces = Ksg_force[Ksg_count]
                 total_force = np.sum(forces, axis=0)

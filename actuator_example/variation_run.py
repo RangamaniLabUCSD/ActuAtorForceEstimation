@@ -8,13 +8,9 @@ from functools import partial
 
 import automembrane.plot_helper as ph
 import jax
-import matplotlib as mpl
 import numpy as np
 from automembrane.energy import ClosedPlaneCurveMaterial
 from automembrane.geometry import ClosedPlaneCurveGeometry
-from automembrane.integrator import fwd_euler_integrator
-from PIL import Image
-from scipy.interpolate import splev, splprep
 from tqdm.contrib.concurrent import process_map
 
 from actuator_constants import files
@@ -24,7 +20,7 @@ ph.matplotlibStyle(small=10, medium=12, large=14)
 
 
 def get_dimensional_tension(Ksg_, Kb, coords):
-    curvature_scale = np.max(abs(ClosedPlaneCurveGeometry.edge_curvature(coords)))
+    curvature_scale = float(np.max(np.abs(ClosedPlaneCurveGeometry.edge_curvature(coords))))
     return 4 * Kb * curvature_scale**2 * Ksg_
 
 
