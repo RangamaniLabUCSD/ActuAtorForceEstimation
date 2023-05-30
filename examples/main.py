@@ -7,11 +7,12 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
+import automembrane.plot_helper as ph
 import automembrane.util as u
 from automembrane.energy import ClosedPlaneCurveMaterial, OpenPlaneCurveMaterial
 
 if __name__ == "__main__":
-    u.matplotlibStyle(medium=10)
+    ph.matplotlibStyle(medium=10)
     fig, ax = plt.subplots(2)
 
     parameters = {
