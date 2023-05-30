@@ -17,6 +17,7 @@ import jax
 from PIL import Image
 from tqdm.auto import tqdm
 from tqdm.contrib.concurrent import process_map
+from actuator_example.make_movie import make_nondimensional_movie
 
 from automembrane.geometry import ClosedPlaneCurveGeometry
 import automembrane.plot_helper as ph
@@ -187,41 +188,21 @@ def plot_force(
 
 
 def run_plot(file, write_movie=True):
-    data = np.load(f"forces/{file.stem}.npz")
-    _Ksg_ = data["_Ksg_"]
-    Ksg_force = data["Ksg_force"]
+    data = np.load(f"forces/{file.stem}.npz", allow_pickle=True)
+    Ksg_range = data["Ksg_range"]
+    Ksg_force = data["Ksg_force"][0]
 
     data = np.load(f"relaxed_coords/{file.stem}.npz")
     relaxed_coords = data["relaxed_coords"]
     original_coords = data["original_coords"]
 
-    fig = plt.figure(figsize=(5, 5))
-
     if write_movie:
-        moviewriter = animation.FFMpegWriter(fps=10)
-        with moviewriter.saving(fig, f"movies/{file.stem}.mp4", dpi=200):
-            for Ksg_count, Ksg_ in tqdm(enumerate(_Ksg_), desc="Rendering plots"):
-                forces = Ksg_force[Ksg_count]
-                total_force = np.sum(forces, axis=0)
-                plot_force(
-                    fig,
-                    file.stem,
-                    original_coords,
-                    relaxed_coords,
-                    total_force,
-                    _Ksg_,
-                    Ksg_,
-                    style="quiver",
-                )
-                # plt.title("$\\bar{\sigma}=$" + f"{Ksg_}" +
-                #         "$, \sigma=$" + f"{math.floor(get_dimensional_tension(Ksg_=Ksg_, Kb=1, coords = relaxed_coords))}$\kappa$")
-                plt.savefig(
-                    "figures/" + file.stem + f"_Ksg{math.floor(Ksg_*1000)}" + ".png"
-                )
-                moviewriter.grab_frame()
-                fig.clear()
+        make_nondimensional_movie(
+            file.stem, original_coords, relaxed_coords, Ksg_force, Ksg_range
+        )
     else:
-        for Ksg_count, Ksg_ in tqdm(enumerate(_Ksg_), desc="Rendering plots"):
+        fig = plt.figure(figsize=(5, 5))
+        for Ksg_count, Ksg_ in tqdm(enumerate(Ksg_range), desc="Rendering plots"):
             forces = Ksg_force[Ksg_count]
             total_force = np.sum(forces, axis=0)
             plot_force(
@@ -230,7 +211,7 @@ def run_plot(file, write_movie=True):
                 original_coords,
                 relaxed_coords,
                 total_force,
-                _Ksg_,
+                Ksg_range,
                 Ksg_,
                 style="color",
             )

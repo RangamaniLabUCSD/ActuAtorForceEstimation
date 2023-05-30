@@ -158,7 +158,6 @@ def make_movie(
 
 
 def make_nondimensional_movie(
-    filename: Union[str, Path],
     file_stem: str,
     original_coords: npt.NDArray[np.float64],
     relaxed_coords: npt.NDArray[np.float64],
@@ -166,6 +165,7 @@ def make_nondimensional_movie(
     Ksg_range: npt.NDArray[np.float64],
     x_lim: npt.NDArray[np.float64] = None,
     y_lim: npt.NDArray[np.float64] = None,
+    style="quiver",
 ):
 
     fig = plt.figure(figsize=(5, 5), dpi=300)
@@ -244,27 +244,47 @@ def make_nondimensional_movie(
     normalized_relaxed_force = forces / max_norm
     f_mag = np.linalg.norm(normalized_relaxed_force, axis=1)
 
-    q = ax2.quiver(
-        relaxed_coords[:, 0],
-        relaxed_coords[:, 1],
-        -normalized_relaxed_force[:, 0],
-        -normalized_relaxed_force[:, 1],
-        f_mag,
-        cmap=mpl.cm.viridis_r,
-        angles="xy",
-        units="xy",
-        label="force",
-        scale=8e-1,
-        scale_units="xy",
-        width=0.02,
-        zorder=10,
-    )
-    cbar = fig.colorbar(
-        q,
-        ax=ax2,
-    )
-    cbar.ax.get_yaxis().labelpad = 20
-    cbar.ax.set_ylabel("Force Density (1)", rotation=270)
+    if style == "quiver":
+        q = ax2.quiver(
+            relaxed_coords[:, 0],
+            relaxed_coords[:, 1],
+            -normalized_relaxed_force[:, 0],
+            -normalized_relaxed_force[:, 1],
+            f_mag,
+            cmap=mpl.cm.viridis_r,
+            angles="xy",
+            units="xy",
+            label="force",
+            scale=8e-1,
+            scale_units="xy",
+            width=0.02,
+            zorder=10,
+        )
+        cbar = fig.colorbar(
+            q,
+            ax=ax2,
+        )
+        cbar.ax.get_yaxis().labelpad = 20
+        cbar.ax.set_ylabel("Actin Force Density (1)", rotation=270)
+    elif style == "color":
+        vertex_normal = ClosedPlaneCurveGeometry.vertex_normal(relaxed_coords)
+        signed_f_mag = np.sum(forces * vertex_normal, axis=1)
+        signed_f_mag = signed_f_mag / np.max(abs(signed_f_mag))
+        points = relaxed_coords.reshape(-1, 1, 2)
+        print(points.shape)
+
+        segments = np.concatenate([points[:-1], points[1:]], axis=1)
+        from matplotlib.collections import LineCollection
+
+        norm = plt.Normalize(-abs(signed_f_mag).max(), abs(signed_f_mag).max())
+        lc = LineCollection(segments, cmap="PRGn", norm=norm)
+        lc.set_array(signed_f_mag)
+        lc.set_linewidth(4)
+        q = ax2.add_collection(lc)
+        cbar = fig.colorbar(q, ax=ax2, ticks=[-1, 0, 1])
+        cbar.ax.set_yticklabels(["Pull", "0", "Push"])
+        # curvature_scale = np.max(ClosedPlaneCurveGeometry.edge_curvature(relaxed_coords))
+        cbar.ax.get_yaxis().labelpad = 20
 
     (line,) = ax2.plot(
         relaxed_coords[:, 0], relaxed_coords[:, 1], linewidth=0.2, color="r"
@@ -284,20 +304,26 @@ def make_nondimensional_movie(
         physics_marker.set_xdata(np.array(Ksg_, Ksg_))
 
         forces = np.sum(relaxed_force[Ksg_], axis=0)
-        max_norm = np.max(np.linalg.norm(forces, axis=1))
-        normalized_force = forces / max_norm
-        f_mag = np.linalg.norm(normalized_force, axis=1)
-        q.set_UVC(-normalized_force[:, 0], -normalized_force[:, 1], f_mag)
-
-        return physics_marker, q
+        if style == "quiver":
+            max_norm = np.max(np.linalg.norm(forces, axis=1))
+            normalized_force = forces / max_norm
+            f_mag = np.linalg.norm(normalized_force, axis=1)
+            q.set_UVC(-normalized_force[:, 0], -normalized_force[:, 1], f_mag)
+            return physics_marker, q
+        elif style == "color":
+            signed_f_mag = np.sum(forces * vertex_normal, axis=1)
+            signed_f_mag = signed_f_mag / np.max(abs(signed_f_mag))
+            lc.set_array(signed_f_mag)
+            return physics_marker, lc
+        return physics_marker
 
     moviewriter = animation.FFMpegWriter(bitrate=2.5e4, fps=30)
 
-    with moviewriter.saving(fig, f"movies/{file_stem}.mp4", dpi=300):
+    with moviewriter.saving(fig, f"movies/{file_stem}_nondim_variation.mp4", dpi=300):
         for Ksg_ in tqdm(
             np.concatenate((Ksg_range, np.flip(Ksg_range))), desc="Rendering frames"
         ):
-            # plt.savefig("figures/" + file.stem + f"_Ksg{math.floor(Ksg*1000)}" + ".png")
+            # plt.savefig(f"figures/{file_stem}_Ksg{np.floor(Ksg_*1000)}" + ".png")
             animate(Ksg_)
             moviewriter.grab_frame()
 

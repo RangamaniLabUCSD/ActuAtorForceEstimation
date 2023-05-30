@@ -277,17 +277,10 @@ def generate_relaxation_movie(file: Path, n_vertices: int = 1000):
         )
         return c, e, f
 
-    if file.stem == "34D-grid2-s5_005_16":
-        coords = relax_bending(coords, dt=3e-7, n_iter=int(1e5), Kb=1, Ksg=20, Ksl=1)
-
     if file.stem in relaxation_parameters:
         c, e, f = get_trajectory(coords, **relaxation_parameters[file.stem])
     else:
         c, e, f = get_trajectory(coords, **relaxation_parameters["other"])
-
-    # if file.stem == "34D-grid3-ActA1_007_16":
-    #     relaxed_coords = np.flip(relaxed_coords, axis=0)
-    #     original_coords = np.flip(original_coords, axis=0)
 
     make_movie(c, e, f, original_coords, file, skip=1000)
     del c, e, f
@@ -297,5 +290,5 @@ if __name__ == "__main__":
     f_run = partial(run_relaxation, n_vertices=1000)
     r = process_map(f_run, files, max_workers=12)
 
-    # f_run = partial(generate_relaxation_movie, n_vertices=1000)
-    # r = process_map(f_run, files, max_workers=1)
+    f_run = partial(generate_relaxation_movie, n_vertices=1000)
+    r = process_map(f_run, files, max_workers=1)

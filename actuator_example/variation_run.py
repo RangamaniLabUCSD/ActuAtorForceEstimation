@@ -36,7 +36,7 @@ def get_force_density(parameters, coords):
 
 
 def run_parameter_variation(file, _Ksg_):
-    Ksg_force = []
+    Ksg_force = {}
     data = np.load(f"relaxed_coords/{file.stem}.npz")
     relaxed_coords = data["relaxed_coords"]
     for Ksg_ in _Ksg_:
@@ -50,9 +50,9 @@ def run_parameter_variation(file, _Ksg_):
         }
         print(f"dimensional tension for {file.stem}: ", Ksg)
         # Ksg_coords_force.append(np.concatenate(([relaxed_coords], relaxed_forces), axis=0))
-        Ksg_force.append(get_force_density(parameters, relaxed_coords))
-    Ksg_force = np.asarray(Ksg_force)
-    np.savez(f"forces/{file.stem}", _Ksg_=_Ksg_, Ksg_force=Ksg_force)
+        Ksg_force[Ksg_] = get_force_density(parameters, relaxed_coords)
+    Ksg_force = np.array([Ksg_force])
+    np.savez(f"forces/{file.stem}", Ksg_range=_Ksg_, Ksg_force=Ksg_force)
 
 
 if __name__ == "__main__":
