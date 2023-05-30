@@ -278,9 +278,9 @@ def generate_relaxation_movie(file: Path, n_vertices: int = 1000):
         return c, e, f
 
     if file.stem in relaxation_parameters:
-        c, e, f = get_trajectory(coords, **relaxation_parameters[file.stem])
+        c, e, f = get_trajectory(coords, **relaxation_parameters[file.stem][0])
     else:
-        c, e, f = get_trajectory(coords, **relaxation_parameters["other"])
+        c, e, f = get_trajectory(coords, **relaxation_parameters["other"][0])
 
     make_movie(c, e, f, original_coords, file, skip=1000)
     del c, e, f

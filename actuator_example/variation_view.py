@@ -17,7 +17,7 @@ import jax
 from PIL import Image
 from tqdm.auto import tqdm
 from tqdm.contrib.concurrent import process_map
-from actuator_example.make_movie import make_nondimensional_movie
+from make_movie import make_nondimensional_movie
 
 from automembrane.geometry import ClosedPlaneCurveGeometry
 import automembrane.plot_helper as ph
