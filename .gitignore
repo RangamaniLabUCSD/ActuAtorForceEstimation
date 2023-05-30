@@ -167,3 +167,8 @@ cython_debug/
 figures/
 movies/
 .DS_Store
+
+*.npz
+*.pyg
+*.mp4
+*.png
